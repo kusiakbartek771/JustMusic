@@ -46,7 +46,9 @@ jobs:
       - name: Konfiguracja opinii (sekret, nie trafia do repozytorium)
         env:
           FEEDBACK_WEBHOOK: ${{ secrets.FEEDBACK_WEBHOOK }}
-        run: node -e "require('fs').writeFileSync('src/main/build-config.json', JSON.stringify({ feedbackWebhook: process.env.FEEDBACK_WEBHOOK || '' }))"
+        shell: bash
+        run: |
+          node -e "require('fs').writeFileSync('src/main/build-config.json', JSON.stringify({ feedbackWebhook: process.env.FEEDBACK_WEBHOOK || '' }))"
 
       - name: Budowanie i publikacja
         env:
