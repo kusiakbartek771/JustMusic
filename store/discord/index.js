@@ -5,7 +5,7 @@ export default function activate(api) {
   const { h, esc } = api;
   const D = {
     appId: '', secret: '', showCover: true, showTime: true, showPaused: true, showButton: true,
-    privacy: false, mode: 'active', listName: 'app', showLogo: true, duck: false, duckLevel: 25, duckSelf: false, afkStatus: true,
+    privacy: false, mode: 'active', listName: 'app', showLogo: true, duck: false, duckLevel: 25, duckSelf: false, duckMethod: 'auto', duckSens: 60, afkStatus: true,
   };
   const cfg = () => ({ ...D, ...api.storage.get('cfg', {}) });
   const save = (patch) => api.storage.set('cfg', { ...cfg(), ...patch });
@@ -14,6 +14,18 @@ export default function activate(api) {
   let lastErr = '';
   let afk = !!api.bus.last('afk');
   const speaking = new Set();
+  let audioSpeaking = false;   // wykrywanie po dźwięku (Linux)
+  let audioApps = [];
+  let meterCb = null;
+  // auto: na Linuksie po dźwięku (działa też z Vesktop/Vencord), gdzie indziej przez Discord RPC
+  const duckMethod = () => {
+    const m = cfg().duckMethod;
+    if (!api.voice) return 'rpc'; // starsza wersja JustMusic
+    if (m === 'audio' || m === 'rpc') return m;
+    return api.system.platform === 'linux' ? 'audio' : 'rpc';
+  };
+  // czułość 0..100 → próg poziomu dźwięku (RMS)
+  const threshold = (sens) => 0.003 + 0.04 * Math.pow(1 - sens / 100, 1.6);
   let releaseTimer = null;
   let refreshSettings = () => {};
 
@@ -82,7 +94,7 @@ export default function activate(api) {
       status = await api.discord.connect(c.appId);
       lastErr = '';
       push(true);
-      if (c.duck && c.secret) api.discord.voice({ enabled: true, secret: c.secret, interactive: false }).catch((e) => { lastErr = e.message === 'AUTH_REQUIRED' ? 'Kliknij „Połącz konto”, aby włączyć przyciszanie' : e.message; refreshSettings(); });
+      if (c.duck && c.secret && duckMethod() === 'rpc') api.discord.voice({ enabled: true, secret: c.secret, interactive: false }).catch((e) => { lastErr = e.message === 'AUTH_REQUIRED' ? 'Kliknij „Połącz konto”, aby włączyć przyciszanie' : e.message; refreshSettings(); });
     } catch (e) {
       lastErr = e.message;
       if (!silent) api.ui.toast('Discord: ' + e.message, { error: true });
@@ -94,7 +106,7 @@ export default function activate(api) {
   function updateDuck() {
     const c = cfg();
     clearTimeout(releaseTimer);
-    if (c.duck && speaking.size) api.player.duck(c.duckLevel / 100, 250);
+    if (c.duck && (speaking.size || audioSpeaking)) api.player.duck(c.duckLevel / 100, 250);
     else releaseTimer = setTimeout(() => api.player.duck(1, 900), 700);
   }
 
@@ -149,7 +161,7 @@ export default function activate(api) {
         api.ui.settingRow('Na liście członków', 'Co znajomi widzą pod Twoim nickiem.', api.ui.select([['app', 'Słucha JustMusic'], ['song', 'Słucha <tytuł utworu>']], c.listName, (v) => { save({ listName: v }); push(true); })),
         S('Logo JustMusic', 'Mała ikona JustMusic przy okładce w statusie.', 'showLogo'),
         S('Status AFK', 'Gdy GoToSleep wykryje nieobecność, status pokaże 💤 AFK.', 'afkStatus'),
-        S('Przyciszaj, gdy ktoś mówi', 'Na kanale głosowym, na którym jesteś. Wymaga jednorazowej autoryzacji konta.', 'duck'),
+        S('Przyciszaj, gdy ktoś mówi', 'Muzyka cichnie, gdy na kanale głosowym ktoś mówi.', 'duck'),
         ...(c.duck ? [
           (() => {
             const r = h('input.range', { type: 'range', min: 0, max: 80, step: 5 });
@@ -159,15 +171,42 @@ export default function activate(api) {
             r.addEventListener('change', () => save({ duckLevel: Number(r.value) }));
             return api.ui.settingRow('Głośność podczas mówienia', '0% = całkowite wyciszenie.', r, v);
           })(),
-          S('Także gdy ja mówię', null, 'duckSelf'),
-          api.ui.settingRow('Client Secret', 'W aplikacji na Discord Developer Portal: OAuth2 → skopiuj „Client Secret” i dodaj Redirect <span class="code">http://127.0.0.1</span>. Sekret zostaje tylko na tym komputerze.', input('secret', '••••••••', 'password')),
+          api.ui.settingRow('Sposób wykrywania', api.system.platform === 'linux' ? '„Po dźwięku” działa z każdym klientem (Discord, Vesktop, Vencord) bez logowania.' : '„Przez Discord” wymaga oficjalnego klienta Discord i autoryzacji konta.',
+            api.ui.select([['auto', 'Automatycznie'], ['audio', 'Po dźwięku (Linux)'], ['rpc', 'Przez Discord (konto)']], c.duckMethod, (v) => { save({ duckMethod: v }); toggleDuck(false, true); toggleDuck(true); draw(); })),
+          ...(duckMethod() === 'audio' ? [
+            (() => {
+              const r = h('input.range', { type: 'range', min: 0, max: 100, step: 5 });
+              r.value = c.duckSens; api.ui.rangeFill(r);
+              const v = h('span', { text: c.duckSens + '%', style: { width: '44px', textAlign: 'right' } });
+              r.addEventListener('input', () => { v.textContent = r.value + '%'; api.ui.rangeFill(r); api.voice.configure({ threshold: threshold(Number(r.value)) }); });
+              r.addEventListener('change', () => save({ duckSens: Number(r.value) }));
+              return api.ui.settingRow('Czułość', 'Wyżej = reaguje na cichsze głosy. Za wysoko = reaguje też na szum.', r, v);
+            })(),
+            (() => {
+              const meter = h('div', { style: { position: 'relative', width: '200px', height: '10px', borderRadius: '6px', background: 'var(--hover)', overflow: 'hidden' } });
+              const bar = h('i', { style: { position: 'absolute', left: '0', top: '0', bottom: '0', width: '0', background: 'var(--accent)', transition: 'width 80ms' } });
+              const thr = h('i', { style: { position: 'absolute', top: '0', bottom: '0', width: '2px', background: 'var(--text)' } });
+              meter.append(bar, thr);
+              const scale = (x) => Math.min(100, Math.sqrt(x / 0.06) * 100); // skala zbliżona do słuchu
+              meterCb = (lvl, t) => {
+                if (!meter.isConnected) { meterCb = null; return; }
+                bar.style.width = scale(lvl) + '%';
+                bar.style.background = audioSpeaking ? 'var(--danger)' : 'var(--accent)';
+                thr.style.left = scale(t) + '%';
+              };
+              return api.ui.settingRow('Głos na żywo', audioApps.length ? `Słucham: <b>${esc(audioApps.join(', '))}</b>` : 'Nie widzę aplikacji czatu – uruchom Discord/Vesktop i dołącz do kanału.', meter);
+            })(),
+          ] : [
+            S('Także gdy ja mówię', null, 'duckSelf'),
+            api.ui.settingRow('Client Secret', 'W aplikacji na Discord Developer Portal: OAuth2 → skopiuj „Client Secret” i dodaj Redirect <span class="code">http://127.0.0.1</span>. Sekret zostaje tylko na tym komputerze.', input('secret', '••••••••', 'password')),
           api.ui.settingRow('Konto Discord', status.voice?.authed ? `<span class="status-dot ok"></span>Autoryzowano${status.voice.channelId ? ' · nasłuch kanału głosowego' : ' · dołącz do kanału głosowego'}` : 'Po kliknięciu Discord zapyta o zgodę.',
             api.ui.button(status.voice?.authed ? 'Autoryzuj ponownie' : 'Połącz konto', { cls: 'sm', primary: !status.voice?.authed, onClick: async () => {
               const s = cfg();
               if (!s.secret) return api.ui.toast('Najpierw wpisz Client Secret', { error: true });
-              try { status = await api.discord.voice({ enabled: true, secret: s.secret, interactive: true }); api.ui.toast('Połączono konto – przyciszanie aktywne'); } catch (e) { api.ui.toast('Discord: ' + e.message, { error: true }); }
+              try { status = await api.discord.voice({ enabled: true, secret: s.secret, interactive: true }); api.ui.toast('Połączono konto – przyciszanie aktywne'); } catch (e) { api.ui.toast('Discord: ' + (/4006|scope|authenticated/i.test(e.message) ? 'ten klient Discorda (np. Vesktop) nie obsługuje tej metody – wybierz „Po dźwięku”' : e.message), { error: true }); }
               draw();
             } })),
+          ]),
         ] : []),
       );
     };
@@ -175,11 +214,33 @@ export default function activate(api) {
     draw();
   });
 
-  function toggleDuck(v) {
+  function toggleDuck(v, silent = false) {
     const c = cfg();
-    if (!v) { speaking.clear(); api.player.duck(1, 500); api.discord.voice({ enabled: false }).catch(() => {}); }
-    else if (c.secret) api.discord.voice({ enabled: true, secret: c.secret, interactive: false }).catch(() => {});
+    if (!v) {
+      speaking.clear();
+      audioSpeaking = false;
+      if (!silent) api.player.duck(1, 500);
+      api.discord.voice({ enabled: false }).catch(() => {});
+      api.voice?.stop().catch(() => {});
+      return;
+    }
+    if (duckMethod() === 'audio') {
+      api.voice.start({ threshold: threshold(c.duckSens) }).then((st) => { audioApps = st.apps || []; refreshSettings(); })
+        .catch((e) => api.ui.toast('Przyciszanie: ' + e.message, { error: true }));
+    } else if (c.secret) api.discord.voice({ enabled: true, secret: c.secret, interactive: false }).catch(() => {});
   }
+
+  // zdarzenia z wykrywania po dźwięku
+  api.voice?.on(({ type, payload }) => {
+    if (type === 'speaking') { audioSpeaking = payload.speaking; updateDuck(); }
+    else if (type === 'level') meterCb?.(payload.level, payload.threshold);
+    else if (type === 'apps') {
+      const changed = payload.apps.join() !== audioApps.join();
+      audioApps = payload.apps;
+      if (changed) refreshSettings();
+    }
+  });
+  if (cfg().duck) toggleDuck(true);
 
   // ---------------- mini panel w odtwarzaczu ----------------
   const svg = (d) => `<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;

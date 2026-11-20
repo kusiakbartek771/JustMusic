@@ -13,6 +13,7 @@ const plugins = require('./plugins');
 const system = require('./system');
 const discord = require('./discord');
 const updater = require('./updater');
+const voicemon = require('./voicemonitor');
 const PKG = require('../../package.json');
 
 const RENDERER = path.join(__dirname, '..', 'renderer');
@@ -394,6 +395,10 @@ function setupIpc() {
   handle('discord:status', () => discord.status());
   handle('discord:voice', (opts) => discord.configureVoice(opts));
   handle('discord:forget', () => discord.forgetToken());
+  handle('voicemon:start', (o) => voicemon.start(o));
+  handle('voicemon:stop', () => voicemon.stop());
+  handle('voicemon:configure', (o) => voicemon.configure(o));
+  handle('voicemon:status', () => voicemon.status());
 
   // ---- aktualizacje ----
   handle('update:state', () => updater.getState());
@@ -438,6 +443,7 @@ app.whenReady().then(async () => {
   setupIpc();
   system.init({ windowGetter: () => win, onCommand: (cmd, arg) => send('player:cmd', { cmd, arg }) });
   discord.setEmitter((type, payload) => send('discord:event', { type, payload }));
+  voicemon.setEmitter((type, payload) => send('voicemon:event', { type, payload }));
   updater.init((st) => send('update:status', { ...st, current: app.getVersion() }));
   createWindow();
   if (appSettings.system?.tray !== false) system.setTray(true);
@@ -454,6 +460,7 @@ app.on('before-quit', () => { app.isQuitting = true; });
 app.on('will-quit', () => {
   system.unregisterAllGlobals();
   discord.disconnect(true);
+  voicemon.stop();
 });
 
 app.on('window-all-closed', () => {

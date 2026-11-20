@@ -127,6 +127,14 @@ function makeApi(p, disposers) {
       forgetAuth: () => window.jm.discord.forget(),
       on: (fn) => track(window.jm.discord.onEvent(fn)),
     },
+    /** Wykrywanie mówienia po dźwięku aplikacji czatu (Linux: PipeWire/PulseAudio) */
+    voice: {
+      start: (o) => { track(() => window.jm.voicemon.stop()); return window.jm.voicemon.start(o); },
+      stop: () => window.jm.voicemon.stop(),
+      configure: (o) => window.jm.voicemon.configure(o),
+      status: () => window.jm.voicemon.status(),
+      on: (fn) => track(window.jm.voicemon.onEvent(fn)),
+    },
     bus: {
       emit: (ev, payload) => bus.emit(ev, payload),
       on: (ev, fn) => track(bus.on(ev, fn)),

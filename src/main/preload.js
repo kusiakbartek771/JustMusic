@@ -92,6 +92,13 @@ contextBridge.exposeInMainWorld('jm', {
     forget: () => call('discord:forget'),
     onEvent: listen('discord:event'),
   },
+  voicemon: {
+    start: (o) => call('voicemon:start', o),
+    stop: () => call('voicemon:stop'),
+    configure: (o) => call('voicemon:configure', o),
+    status: () => call('voicemon:status'),
+    onEvent: listen('voicemon:event'),
+  },
   feedback: { save: (text) => call('feedback:save', text) },
   update: {
     state: () => call('update:state'),
