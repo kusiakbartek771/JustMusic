@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self' jm:; script-src 'self' jm:; style-src 'self' 'unsafe-inline' jm:; img-src * data: blob: jm:; media-src * blob: jm:; connect-src * jm: data: blob:; font-src 'self' jm: data:" />
+  <title>JustMusic</title>
+  <link rel="stylesheet" href="css/app.css" />
+  <style id="custom-css"></style>
+</head>
+<body>
+  <div id="ambient" aria-hidden="true"></div>
+  <div id="app">
+    <header id="titlebar"></header>
+    <aside id="sidebar" class="panel"></aside>
+    <div class="resizer" data-panel="sidebar" title="Przeciągnij, aby zmienić szerokość"></div>
+    <main id="main" class="panel">
+      <div id="view" class="scroll"></div>
+    </main>
+    <div class="resizer" data-panel="queue" title="Przeciągnij, aby zmienić szerokość"></div>
+    <aside id="queue" class="panel"></aside>
+    <footer id="player" class="panel"></footer>
+  </div>
+  <div id="overlays"></div>
+  <div id="toasts" aria-live="polite"></div>
+  <div id="drop-hint">Upuść pliki audio, aby dodać je do biblioteki</div>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

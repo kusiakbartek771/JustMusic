@@ -1,0 +1,16 @@
+.lyrics-view { padding: 40px 48px 50vh; max-width: 900px; margin: 0 auto; }
+.lyrics-view .ly-head { display: flex; align-items: center; gap: 16px; margin-bottom: 32px; }
+.lyrics-view .ly-head .cover { width: 72px; height: 72px; flex: none; }
+.lyrics-view .ly-head h2 { margin: 0; font-size: 22px; }
+.lyrics-view .ly-head .muted { font-size: 14px; }
+.lyrics-view .ly-line {
+  font-size: calc(28px * var(--font-scale)); font-weight: 800; letter-spacing: -0.01em; line-height: 1.35;
+  padding: 6px 0; color: color-mix(in srgb, var(--text) 32%, transparent); cursor: pointer;
+  transition: color 250ms, transform 250ms; transform-origin: left center;
+}
+.lyrics-view .ly-line:hover { color: color-mix(in srgb, var(--text) 70%, transparent); }
+.lyrics-view .ly-line.past { color: color-mix(in srgb, var(--text) 55%, transparent); }
+.lyrics-view .ly-line.active { color: var(--text); transform: scale(1.02); }
+.lyrics-view .ly-line.gap { min-height: 24px; }
+.lyrics-view .ly-plain { white-space: pre-wrap; font-size: 18px; line-height: 1.7; color: var(--text); user-select: text; }
+.lyrics-view .ly-src { margin-top: 40px; font-size: 12px; color: var(--text-dim); }

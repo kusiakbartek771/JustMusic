@@ -1,0 +1,11 @@
+{
+  "id": "evenmorecolors",
+  "name": "EvenMoreColors",
+  "version": "1.0.0",
+  "author": "JustMusic",
+  "icon": "palette",
+  "tags": ["motywy", "kolory", "wygląd"],
+  "short": "24 dodatkowe motywy kolorystyczne, generator motywów i kolory dopasowane do okładki.",
+  "description": "• 24 nowe motywy – ciemne, jasne, pastelowe, neonowe i wysokokontrastowe\n• generator: losowy motyw jednym kliknięciem (z regulacją nasycenia)\n• cały motyw wygenerowany z okładki aktualnego utworu\n• opcjonalnie: nowy kolor akcentu przy każdym utworze\nNowe motywy pojawiają się w Ustawienia → Motyw i kolory.",
+  "main": "index.js"
+}

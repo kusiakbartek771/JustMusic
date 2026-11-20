@@ -1,0 +1,11 @@
+{
+  "id": "ohmanykeybinds",
+  "name": "OhManyKeybinds",
+  "version": "1.0.0",
+  "author": "JustMusic",
+  "icon": "command",
+  "tags": ["skróty", "klawiatura", "produktywność"],
+  "short": "Przypisz własny skrót klawiszowy do każdej akcji w aplikacji – także globalnie, gdy okno jest schowane.",
+  "description": "• ponad 40 akcji: odtwarzanie, głośność, polubienia, zakładki, nawigacja, układ paneli, motywy, okno…\n• nagrywanie skrótu jednym naciśnięciem klawiszy\n• skróty globalne (działają w tle, np. w grze)\n• ostrzeżenia o konfliktach\n• możliwość wyłączenia domyślnych skrótów JustMusic\n• akcje dodane przez inne pluginy też da się przypisać\nUwaga: na Linuksie z Waylandem skróty globalne zależą od obsługi przez środowisko graficzne.",
+  "main": "index.js"
+}

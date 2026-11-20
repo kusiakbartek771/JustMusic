@@ -1,0 +1,130 @@
+{
+  "name": "justmusic",
+  "productName": "JustMusic",
+  "version": "1.1.0",
+  "description": "JustMusic – odtwarzacz muzyki: YouTube, Spotify, pliki lokalne, pobieranie, pluginy i pełna customizacja.",
+  "main": "src/main/main.js",
+  "author": "JustMusic contributors",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "dist": "electron-builder",
+    "dist:win": "electron-builder --win",
+    "dist:linux": "electron-builder --linux",
+    "dist:mac": "electron-builder --mac",
+    "release": "electron-builder --publish always"
+  },
+  "dependencies": {
+    "electron-updater": "6.8.11",
+    "music-metadata": "12.3.3"
+  },
+  "devDependencies": {
+    "electron": "45.2.1",
+    "electron-builder": "26.18.0"
+  },
+  "build": {
+    "appId": "app.justmusic.player",
+    "productName": "JustMusic",
+    "copyright": "JustMusic contributors",
+    "directories": {
+      "output": "dist",
+      "buildResources": "assets"
+    },
+    "files": [
+      "src/**/*",
+      "store/**/*",
+      "assets/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis-web",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.png"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb",
+        "pacman"
+      ],
+      "category": "Audio",
+      "icon": "assets/icon.png",
+      "maintainer": "JustMusic contributors",
+      "desktop": {
+        "entry": {
+          "StartupWMClass": "JustMusic"
+        }
+      },
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "category": "public.app-category.music",
+      "icon": "assets/icon.png",
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "kusiakbartek771",
+        "repo": "JustMusic",
+        "releaseType": "release"
+      }
+    ],
+    "nsisWeb": {
+      "oneClick": true,
+      "perMachine": false,
+      "artifactName": "${productName}-Installer.${ext}",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "JustMusic"
+    },
+    "portable": {
+      "artifactName": "${productName}-${version}-portable.${ext}"
+    },
+    "appImage": {
+      "artifactName": "${productName}-${arch}.${ext}"
+    }
+  },
+  "desktopName": "justmusic.desktop",
+  "justmusic": {
+    "repo": "kusiakbartek771/JustMusic",
+    "feedbackEmail": "",
+    "feedbackUrl": "https://github.com/kusiakbartek771/JustMusic/issues/new",
+    "pluginCatalogUrl": ""
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kusiakbartek771/JustMusic.git"
+  },
+  "homepage": "https://github.com/kusiakbartek771/JustMusic"
+}

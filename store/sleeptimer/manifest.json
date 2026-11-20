@@ -1,0 +1,14 @@
+{
+  "id": "sleeptimer",
+  "name": "Wyłącznik czasowy",
+  "version": "1.1.0",
+  "description": "Przycisk księżyca w odtwarzaczu ustawia odliczanie. Przez ostatnie 15 sekund głośność płynnie opada, a potem muzyka się zatrzymuje. Możesz też ustawić własny czas lub „po tym utworze”.",
+  "author": "JustMusic",
+  "main": "index.js",
+  "icon": "moon",
+  "tags": [
+    "sen",
+    "timer"
+  ],
+  "short": "Zatrzymaj muzykę po 15, 30, 60 minutach albo po bieżącym utworze."
+}

@@ -1,0 +1,15 @@
+{
+  "id": "lyrics",
+  "name": "Teksty piosenek",
+  "version": "1.1.0",
+  "description": "Pobiera teksty z darmowej bazy LRCLIB (bez kont i kluczy).\n• tekst przewija się sam i podświetla aktualną linię\n• kliknij linię, aby przeskoczyć do tego momentu utworu\n• gdy brak wersji zsynchronizowanej – pokazuje zwykły tekst\nDodaje widok „Tekst” w menu i przycisk mikrofonu w odtwarzaczu.",
+  "author": "JustMusic",
+  "main": "index.js",
+  "style": "style.css",
+  "icon": "mic",
+  "tags": [
+    "tekst",
+    "karaoke"
+  ],
+  "short": "Zsynchronizowane teksty piosenek – aktualna linia podświetla się w rytm muzyki."
+}

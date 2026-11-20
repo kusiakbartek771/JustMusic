@@ -1,0 +1,14 @@
+{
+  "id": "visualizer",
+  "name": "Wizualizer",
+  "version": "1.1.0",
+  "description": "Animacja reaguje na dźwięk w czasie rzeczywistym i używa kolorów Twojego motywu. Cztery tryby i regulacja czułości. Działa z każdym źródłem: YouTube, Spotify i plikami lokalnymi.",
+  "author": "JustMusic",
+  "main": "index.js",
+  "icon": "activity",
+  "tags": [
+    "efekty",
+    "grafika"
+  ],
+  "short": "Pełnoekranowa wizualizacja muzyki – słupki, fala, okrąg i lustro."
+}
