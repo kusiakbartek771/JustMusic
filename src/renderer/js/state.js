@@ -15,7 +15,7 @@ export const DEFAULT_SETTINGS = {
   playback: {
     volume: 0.8, muted: false, shuffle: false, repeat: 'off', resume: true, prefetch: true,
     eq: { enabled: false, preset: 'flat', gains: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], preamp: 0 },
-    seekStep: 10, fadeMs: 250,
+    seekStep: 10, fadeMs: 250, bass: 0,
   },
   downloads: { dir: '', format: 'm4a', tag: true, concurrent: 2 },
   youtube: { searchMode: 'youtube', results: 25, cookiesBrowser: '', extraArgs: '', ytdlpPath: '', ffmpegPath: '', jsRuntime: true },

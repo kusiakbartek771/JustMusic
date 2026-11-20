@@ -38,7 +38,7 @@ let prefetched = null;
 let pendingStart = 0; // pozycja do wznowienia po restarcie aplikacji
 
 // ---------------- Web Audio (EQ + analizator) ----------------
-let ctx = null, srcNode = null, filters = [], preampNode = null, analyser = null;
+let ctx = null, srcNode = null, filters = [], preampNode = null, analyser = null, bassNode = null, bassTrim = null;
 
 export function ensureGraph() {
   if (ctx) return { ctx, analyser };
@@ -56,7 +56,12 @@ export function ensureGraph() {
     analyser = ctx.createAnalyser();
     analyser.fftSize = 2048;
     analyser.smoothingTimeConstant = 0.8;
-    let node = srcNode.connect(preampNode);
+    // osobny suwak basu – niezależny od korektora
+    bassNode = ctx.createBiquadFilter();
+    bassNode.type = 'lowshelf';
+    bassNode.frequency.value = 110;
+    bassTrim = ctx.createGain(); // zapas głośności, żeby mocny bas nie przesterowywał
+    let node = srcNode.connect(preampNode).connect(bassNode).connect(bassTrim);
     for (const f of filters) node = node.connect(f);
     node.connect(analyser);
     analyser.connect(ctx.destination);
@@ -67,12 +72,18 @@ export function ensureGraph() {
   return { ctx, analyser };
 }
 
+export const BASS_MIN = -6, BASS_MAX = 15;
+
 export function applyEq() {
   const eq = S.settings.playback.eq;
   if (!ctx) {
-    if (eq.enabled) ensureGraph();
+    if (eq.enabled || S.settings.playback.bass) ensureGraph();
     return;
   }
+  const bass = S.settings.playback.bass || 0;
+  const t = ctx.currentTime;
+  bassNode.gain.setTargetAtTime(bass, t, 0.03);
+  bassTrim.gain.setTargetAtTime(Math.pow(10, -Math.max(0, bass) * 0.45 / 20), t, 0.03);
   filters.forEach((f, i) => (f.gain.value = eq.enabled ? eq.gains[i] || 0 : 0));
   preampNode.gain.value = eq.enabled ? Math.pow(10, (eq.preamp || 0) / 20) : 1;
 }
@@ -155,6 +166,8 @@ function failed(token, msg, skip = true) {
 }
 
 async function playSafe() {
+  // zapisany korektor / bas – graf audio tworzymy przy pierwszym odtwarzaniu
+  if (!ctx && (S.settings.playback.eq.enabled || S.settings.playback.bass)) ensureGraph();
   if (ctx?.state === 'suspended') ctx.resume();
   try {
     await audio.play();
@@ -438,6 +451,15 @@ export function setDuck(id, factor, ms = 300) {
 function volumeValue() {
   const pb = S.settings.playback;
   return (pb.muted ? 0 : Math.pow(pb.volume, 2)) * duckFactor(); // krzywa percepcyjna
+}
+
+/** Wzmocnienie basu w dB (BASS_MIN…BASS_MAX), 0 = wyłączone */
+export function setBass(db) {
+  S.settings.playback.bass = Math.round(Math.max(BASS_MIN, Math.min(BASS_MAX, Number(db) || 0)));
+  applyEq();
+  if (ctx?.state === 'suspended' && P.playing) ctx.resume();
+  saveSettings();
+  emit('bass');
 }
 
 export function setVolume(v) {

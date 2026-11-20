@@ -134,9 +134,17 @@ export function renderPlayer() {
   bmBtn.addEventListener('contextmenu', (e) => { e.preventDefault(); bookmarkMoment(true); });
   const dlBtn = iconBtn('download', 'Pobierz utwór', () => P.current && downloadTracks([P.current]), 'sm');
   const eqBtn = iconBtn('sliders', 'Korektor (EQ)', () => openEq(eqBtn), 'sm');
+  const bassBtn = h('button.icon-btn.sm.bass-btn', { title: 'Bas · kółko myszy: zmiana, PPM: wyłącz', 'aria-label': 'Bas', on: { click: () => popover(bassBtn, bassPanel(), { align: 'right' }) } });
+  bassBtn.addEventListener('wheel', (e) => { e.preventDefault(); player.setBass((S.settings.playback.bass || 0) + (e.deltaY < 0 ? 1 : -1)); }, { passive: false });
+  bassBtn.addEventListener('contextmenu', (e) => { e.preventDefault(); player.setBass(0); });
+  const drawBass = () => {
+    const b = S.settings.playback.bass || 0;
+    bassBtn.innerHTML = icon('bass') + (b ? `<span class="bass-badge">${b > 0 ? '+' : ''}${b}</span>` : '');
+    bassBtn.classList.toggle('on', b !== 0);
+  };
   const queueBtn = iconBtn('queue', 'Kolejka (Q)', () => toggleQueue(), 'sm');
   const pluginSlot = h('div', { style: { display: 'contents' } });
-  const right = h('div.right', null, pluginSlot, bmBtn, dlBtn, eqBtn, queueBtn, volBtn, h('div.vol', null, vol));
+  const right = h('div.right', null, pluginSlot, bmBtn, dlBtn, bassBtn, eqBtn, queueBtn, volBtn, h('div.vol', null, vol));
 
   el.replaceChildren(np, center, right);
 
@@ -172,8 +180,9 @@ export function renderPlayer() {
   on('state', drawState);
   on('loading', drawState);
   on('volume', drawVol);
+  on('bass', drawBass);
   on('modes', drawModes);
-  on('settings', () => { drawModes(); drawVol(); });
+  on('settings', () => { drawModes(); drawVol(); drawBass(); });
   on('queuePanel', drawModes);
   on('liked', drawLike);
   on('downloaded', drawExtras);
@@ -182,7 +191,50 @@ export function renderPlayer() {
   audio.addEventListener('loadedmetadata', drawMarks);
   audio.addEventListener('progress', drawTime);
 
-  drawNp(); drawState(); drawModes(); drawVol(); drawTime(); drawExtras();
+  drawNp(); drawState(); drawModes(); drawVol(); drawBass(); drawTime(); drawExtras();
+}
+
+// ---------------- bas ----------------
+const BASS_PRESETS = [[0, 'Wył.'], [4, 'Lekki'], [8, 'Mocny'], [12, 'Max']];
+const fmtBass = (v) => (v > 0 ? '+' : '') + v + ' dB';
+
+/** Suwak basu (używany w okienku basu i w korektorze) */
+export function bassSlider({ compact = false } = {}) {
+  const input = h('input.range.bass-range', { type: 'range', min: player.BASS_MIN, max: player.BASS_MAX, step: 1, title: 'Bas (dwuklik: 0)' });
+  const val = h('span.bass-val', { text: '' });
+  const draw = () => {
+    const b = S.settings.playback.bass || 0;
+    if (document.activeElement !== input) input.value = b;
+    val.textContent = fmtBass(b);
+    rangeFill(input);
+  };
+  input.addEventListener('input', () => { player.setBass(Number(input.value)); val.textContent = fmtBass(Number(input.value)); rangeFill(input); });
+  input.addEventListener('dblclick', () => player.setBass(0));
+  const off = on('bass', draw);
+  draw();
+  const row = h('div.bass-row' + (compact ? '.compact' : ''), null, h('span.bass-lbl', { html: icon('bass') + '<span>Bas</span>' }), input, val);
+  row._dispose = off;
+  return row;
+}
+
+function bassPanel() {
+  const wrap = h('div.bass-panel');
+  const slider = bassSlider();
+  const chips = h('div.bass-chips');
+  const drawChips = () => {
+    const b = S.settings.playback.bass || 0;
+    chips.replaceChildren(...BASS_PRESETS.map(([v, label]) => h('button.chip' + (b === v ? '.on' : ''), { text: label, on: { click: () => player.setBass(v) } })));
+  };
+  const off = on('bass', drawChips);
+  drawChips();
+  wrap.append(
+    h('div.bass-head', null, h('b', { text: 'Bas' }), h('small', { text: 'Działa niezależnie od korektora' })),
+    slider, chips,
+    h('small.bass-hint', { text: 'Kółko myszy na ikonie zmienia bas, prawy przycisk go wyłącza.' }));
+  // sprzątanie nasłuchów po zamknięciu okienka
+  const mo = new MutationObserver(() => { if (!wrap.isConnected) { off(); slider._dispose?.(); mo.disconnect(); } });
+  setTimeout(() => mo.observe(document.body, { childList: true, subtree: true }), 0);
+  return wrap;
 }
 
 // ---------------- korektor ----------------
@@ -229,7 +281,10 @@ export function eqPanel() {
   rangeFill(pre);
   const preVal = h('span', { text: fmtDb(eq.preamp || 0) + ' dB', style: { width: '48px', textAlign: 'right', fontSize: '12px' } });
   pre.addEventListener('input', () => { eq.preamp = Number(pre.value); preVal.textContent = fmtDb(eq.preamp) + ' dB'; rangeFill(pre); commit(); });
-  wrap.append(head, bands, h('div', { style: { display: 'flex', alignItems: 'center', gap: '10px', marginTop: '10px', fontSize: '12px', color: 'var(--text-dim)' } }, h('span', { text: 'Przedwzmacniacz' }), pre, preVal));
+  const bass = bassSlider({ compact: true });
+  wrap.append(head, bands, h('div', { style: { display: 'flex', alignItems: 'center', gap: '10px', marginTop: '10px', fontSize: '12px', color: 'var(--text-dim)' } }, h('span', { text: 'Przedwzmacniacz' }), pre, preVal), bass);
+  const mo = new MutationObserver(() => { if (!wrap.isConnected) { bass._dispose?.(); mo.disconnect(); } });
+  setTimeout(() => mo.observe(document.body, { childList: true, subtree: true }), 0);
   return wrap;
 }
 

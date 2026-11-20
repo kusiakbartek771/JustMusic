@@ -42,6 +42,9 @@ export async function registerBuiltinCommands() {
   add('Odtwarzanie', 'player.back', 'Przewiń do tyłu', () => player.seekBy(-S.settings.playback.seekStep));
   add('Odtwarzanie', 'player.restart', 'Od początku utworu', () => player.seek(0));
   add('Odtwarzanie', 'player.volUp', 'Głośniej', () => player.setVolume(S.settings.playback.volume + 0.05));
+  add('Odtwarzanie', 'player.bassUp', 'Więcej basu', () => player.setBass((S.settings.playback.bass || 0) + 1));
+  add('Odtwarzanie', 'player.bassDown', 'Mniej basu', () => player.setBass((S.settings.playback.bass || 0) - 1));
+  add('Odtwarzanie', 'player.bassReset', 'Bas: wyłącz wzmocnienie', () => player.setBass(0));
   add('Odtwarzanie', 'player.volDown', 'Ciszej', () => player.setVolume(S.settings.playback.volume - 0.05));
   add('Odtwarzanie', 'player.mute', 'Wycisz / przywróć dźwięk', () => player.toggleMute());
   add('Odtwarzanie', 'player.shuffle', 'Losowo wł./wył.', () => player.toggleShuffle());
