@@ -13,6 +13,8 @@ import { toast } from './ui.js';
 import { registerBuiltinCommands, shortcutState } from './commands.js';
 import { setupSystemIntegration } from './sysint.js';
 import { setupUpdates } from './updates.js';
+import { setupSurvey } from './survey.js';
+import { shouldOnboard, openOnboarding } from './onboarding.js';
 import './views.js';
 import './settings.js';
 
@@ -32,6 +34,8 @@ async function boot() {
   await registerBuiltinCommands();
   setupSystemIntegration();
   setupUpdates();
+  setupSurvey();
+  if (shouldOnboard()) setTimeout(openOnboarding, 300);
 
   await loadCached();
   player.restoreSession();

@@ -90,8 +90,7 @@ function installShortcut({ desktop = false } = {}) {
       const d = path.join(app.getPath('desktop'), `${APP_ID}.desktop`);
       fs.writeFileSync(d, desktopEntry(), { mode: 0o755 });
     }
-    // odśwież bazę (nie jest wymagane – większość środowisk wykrywa zmiany sama)
-    try { require('child_process').spawn('update-desktop-database', [path.dirname(p.desktop)], { stdio: 'ignore' }).on('error', () => {}); } catch {}
+    refreshDesktopCaches(path.dirname(p.desktop));
     return shortcutStatus();
   }
   if (isWin) {
@@ -104,6 +103,35 @@ function installShortcut({ desktop = false } = {}) {
     return shortcutStatus();
   }
   return shortcutStatus();
+}
+
+// Odświeżenie list aplikacji (KDE trzyma własną pamięć podręczną – bez tego pasek zadań pokazuje „?”)
+function refreshDesktopCaches(dir) {
+  const { spawn } = require('child_process');
+  for (const [cmd, args] of [['update-desktop-database', [dir]], ['kbuildsycoca6', []], ['kbuildsycoca5', []]]) {
+    try { spawn(cmd, args, { stdio: 'ignore', detached: true }).on('error', () => {}).unref(); } catch {}
+  }
+}
+
+// Linux: przy starcie upewnij się, że istnieje aktualny skrót z ikoną –
+// środowiska Wayland (KDE, GNOME) biorą ikonę okna wyłącznie z pliku .desktop.
+function ensureDesktopEntry() {
+  if (!isLinux) return false;
+  // pakiety .deb/.pacman instalują własny skrót systemowy
+  if (fs.existsSync(`/usr/share/applications/${APP_ID}.desktop`)) return false;
+  const p = linuxPaths();
+  const want = desktopEntry();
+  let cur = null;
+  try { cur = fs.readFileSync(p.desktop, 'utf8'); } catch {}
+  const iconOk = fs.existsSync(p.icon);
+  if (cur === want && iconOk) return false;
+  try {
+    installShortcut({});
+    return true;
+  } catch (e) {
+    console.warn('[system] desktop entry', e.message);
+    return false;
+  }
 }
 
 function removeShortcut() {
@@ -256,6 +284,6 @@ function idleSeconds() {
 
 module.exports = {
   init, setTray, hasTray, toggleWindow, nowPlaying, progress,
-  shortcutStatus, installShortcut, removeShortcut, getAutostart, setAutostart,
+  shortcutStatus, installShortcut, removeShortcut, ensureDesktopEntry, getAutostart, setAutostart,
   registerGlobal, unregisterGlobal, unregisterAllGlobals, idleSeconds,
 };

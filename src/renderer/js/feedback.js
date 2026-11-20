@@ -66,6 +66,32 @@ export function openFeedback(preset = 'bug') {
 
   const cfg = S.config || {};
   const actions = h('div.modal-actions', { style: { flexWrap: 'wrap' } });
+  // Wysyłka bezpośrednio do autora – bez konta na GitHubie
+  if (cfg.feedbackDirect) {
+    const sendBtn = btn('Wyślij', { icon: 'message', primary: true, onClick: async () => {
+      if (!valid()) return;
+      sendBtn.disabled = true;
+      const t = TYPES.find((x) => x[0] === type);
+      try {
+        await window.jm.feedback.send({
+          kind: type,
+          title: `[${t[2]}] ${title.value.trim() || '(bez tytułu)'}`,
+          text: msg.value.trim(),
+          fields: [
+            mood >= 0 ? { name: 'Ocena', value: `${MOODS[mood]} ${mood + 1}/5`, inline: true } : null,
+            contact.value.trim() ? { name: 'Kontakt', value: contact.value.trim(), inline: true } : null,
+            sysBox.checked ? { name: 'System', value: sysInfo() } : null,
+          ].filter(Boolean),
+        });
+        toast('Dziękujemy! Opinia wysłana 💜');
+        m.close();
+      } catch (e) {
+        sendBtn.disabled = false;
+        toast(e.message, { error: true });
+      }
+    } });
+    actions.append(sendBtn);
+  }
   actions.append(
     btn('Kopiuj', { icon: 'copy', cls: 'ghost', onClick: () => { if (!valid()) return; navigator.clipboard.writeText(report()); toast('Skopiowano zgłoszenie'); } }),
     btn('Zapisz do pliku', { icon: 'file', cls: 'ghost', onClick: async () => {
@@ -75,7 +101,7 @@ export function openFeedback(preset = 'bug') {
     } }),
   );
   if (cfg.feedbackUrl) {
-    actions.append(btn('Wyślij zgłoszenie', { icon: 'external', primary: !cfg.feedbackEmail, onClick: () => {
+    actions.append(btn(cfg.feedbackDirect ? 'Na GitHubie' : 'Wyślij zgłoszenie', { icon: 'external', cls: cfg.feedbackDirect ? 'ghost' : '', primary: !cfg.feedbackEmail && !cfg.feedbackDirect, onClick: () => {
       if (!valid()) return;
       const u = new URL(cfg.feedbackUrl);
       u.searchParams.set('title', title.value.trim() || TYPES.find((x) => x[0] === type)[2]);
@@ -102,7 +128,8 @@ export function openFeedback(preset = 'bug') {
     h('div.fb-form', null, title, msg, contact,
       h('label.fb-check', null, sysBox, h('span', { text: 'Dołącz informacje o systemie i wersji (bez danych osobowych)' })),
       preview, moodRow),
-    !cfg.feedbackUrl && !cfg.feedbackEmail ? h('p.muted', { style: { fontSize: '12px', margin: '10px 0 0' }, text: 'Skopiuj zgłoszenie lub zapisz je do pliku i wyślij autorowi aplikacji.' }) : null,
+    cfg.feedbackDirect ? h('p.muted', { style: { fontSize: '12px', margin: '10px 0 0' }, text: 'Opinia trafi prosto do autora – nie potrzebujesz żadnego konta.' }) : null,
+    !cfg.feedbackUrl && !cfg.feedbackEmail && !cfg.feedbackDirect ? h('p.muted', { style: { fontSize: '12px', margin: '10px 0 0' }, text: 'Skopiuj zgłoszenie lub zapisz je do pliku i wyślij autorowi aplikacji.' }) : null,
     actions,
   ], { wide: true });
   setTimeout(() => title.focus(), 50);

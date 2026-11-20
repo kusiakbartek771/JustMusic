@@ -1,13 +1,19 @@
 // Plugin: Discord – status „Słucha …” (Rich Presence) + przyciszanie, gdy ktoś mówi.
 const LOGO = 'https://raw.githubusercontent.com/kusiakbartek771/JustMusic/main/assets/icon.png';
+// Oficjalna aplikacja „JustMusic” na Discordzie – działa od razu, bez konfiguracji
+const DEFAULT_APP_ID = '1573326537111904288';
 
 export default function activate(api) {
   const { h, esc } = api;
   const D = {
-    appId: '', secret: '', showCover: true, showTime: true, showPaused: true, showButton: true,
+    appId: DEFAULT_APP_ID, secret: '', showCover: true, showTime: true, showPaused: true, showButton: true,
     privacy: false, mode: 'active', listName: 'app', showLogo: true, duck: false, duckLevel: 25, duckSelf: false, duckMethod: 'auto', duckSens: 60, afkStatus: true,
   };
-  const cfg = () => ({ ...D, ...api.storage.get('cfg', {}) });
+  const cfg = () => {
+    const c = { ...D, ...api.storage.get('cfg', {}) };
+    if (!c.appId) c.appId = DEFAULT_APP_ID;
+    return c;
+  };
   const save = (patch) => api.storage.set('cfg', { ...cfg(), ...patch });
 
   let status = { connected: false, user: null, voice: {} };
@@ -150,9 +156,11 @@ export default function activate(api) {
           api.ui.button(status.connected ? 'Rozłącz' : 'Połącz', { cls: 'sm', onClick: async () => {
             if (status.connected) { await api.discord.disconnect(); status = { connected: false }; draw(); } else connect();
           } })),
-        api.ui.settingRow('Application ID', 'Utwórz darmową aplikację na <b>discord.com/developers/applications</b> → „New Application” i nazwij ją <b>JustMusic</b> (ta nazwa pojawi się w statusie: „Słucha JustMusic”). Skopiuj „Application ID”.',
-          input('appId', 'np. 1234567890123456789'),
-          api.ui.button('Otwórz', { cls: 'sm ghost', onClick: () => window.open('https://discord.com/developers/applications') })),
+        api.ui.settingRow('Application ID', c.appId === DEFAULT_APP_ID
+          ? 'Używasz oficjalnej aplikacji <b>JustMusic</b> – nic nie musisz zmieniać. Własne ID przyda się tylko do przyciszania przez Discord na Windows/macOS (wymaga Client Secret Twojej aplikacji).'
+          : 'Własna aplikacja z discord.com/developers/applications. Wyczyść pole, aby wrócić do oficjalnej aplikacji JustMusic.',
+          input('appId', DEFAULT_APP_ID),
+          c.appId !== DEFAULT_APP_ID ? api.ui.button('Domyślne', { cls: 'sm ghost', onClick: () => { save({ appId: '' }); connect(); draw(); } }) : null),
         S('Okładka utworu', null, 'showCover'),
         S('Pasek czasu', 'Pokazuje, ile utworu zostało.', 'showTime'),
         S('Pokazuj przy pauzie', 'Wyłącz, aby status znikał, gdy muzyka nie gra.', 'showPaused'),

@@ -11,6 +11,35 @@ import { flush } from './state.js';
 import { updatesPanel } from './updates.js';
 import { addFolder, removeFolder, rescan } from './library.js';
 
+// Wiersz ffmpeg: status + pobieranie jednym kliknięciem
+export function ffmpegRow(st, onDone) {
+  const size = { win32: '~120 MB', darwin: '~60 MB', linux: '~160 MB' }[S.platform] || '';
+  const progress = h('div.progress', { style: { width: '160px', display: 'none' } }, h('i', { style: { width: '0%' } }));
+  const label = h('span.muted', { style: { fontSize: '12px', display: 'none' } });
+  const dl = btn(`Pobierz ffmpeg (${size})`, { icon: 'download', primary: true, cls: 'sm', onClick: async () => {
+    dl.disabled = true;
+    progress.style.display = '';
+    label.style.display = '';
+    const off = window.jm.yt.onFfmpegProgress((p) => {
+      progress.firstChild.style.width = p.percent + '%';
+      label.textContent = p.phase === 'extract' ? 'Rozpakowywanie…' : `${p.mb} / ${p.totalMb} MB`;
+    });
+    try {
+      S.ytStatus = await window.jm.yt.installFfmpeg();
+      toast('ffmpeg gotowy ✓ – możesz pobierać w MP3 i OPUS');
+      emit('yt:status');
+    } catch (e) {
+      toast('Nie udało się pobrać ffmpeg: ' + e.message, { error: true });
+    } finally { off(); onDone?.(); }
+  } });
+  const sysHint = S.platform === 'win32' ? '<span class="code">winget install ffmpeg</span>' : S.platform === 'darwin' ? '<span class="code">brew install ffmpeg</span>' : '<span class="code">sudo pacman -S ffmpeg</span> / <span class="code">sudo apt install ffmpeg</span>';
+  if (st.ffmpeg) {
+    return row('ffmpeg', `<span class="status-dot ok"></span>${st.ffmpegManaged ? 'Pobrany przez JustMusic' : 'Z systemu'} · <span class="code">${esc(st.ffmpeg)}</span>`,
+      st.ffmpegManaged ? btn('Usuń', { cls: 'sm ghost', onClick: async () => { S.ytStatus = await window.jm.yt.removeFfmpeg(); onDone?.(); } }) : null);
+  }
+  return row('ffmpeg', `<span class="status-dot"></span>Opcjonalny – potrzebny do MP3/OPUS, okładek i czystych tagów. Pobierz jednym kliknięciem albo zainstaluj z systemu: ${sysHint}`, label, progress, dl);
+}
+
 const TABS = [
   ['appearance', 'palette', 'Motyw i kolory'],
   ['style', 'brush', 'Styl'],
@@ -259,9 +288,7 @@ const SECTIONS = {
       });
       engine.replaceChildren(
         row('yt-dlp', st.ready ? `<span class="status-dot ok"></span>Wersja ${esc(st.version)} · <span class="code">${esc(st.path)}</span>` : '<span class="status-dot"></span>Nie znaleziono – wymagany do YouTube i Spotify. Pobierany z oficjalnego GitHuba.', progress, installBtn, iconBtn('refresh', 'Sprawdź ponownie', () => drawEngine(true), 'sm')),
-        row('ffmpeg', st.ffmpeg
-          ? `<span class="status-dot ok"></span>Znaleziono · <span class="code">${esc(st.ffmpeg)}</span>`
-          : `<span class="status-dot"></span>Opcjonalny – potrzebny do MP3/OPUS, okładek i tagów. Instalacja: ${S.platform === 'win32' ? '<span class="code">winget install ffmpeg</span>' : S.platform === 'darwin' ? '<span class="code">brew install ffmpeg</span>' : '<span class="code">sudo apt install ffmpeg</span> / <span class="code">sudo pacman -S ffmpeg</span>'}`),
+        ffmpegRow(st, () => drawEngine(true)),
       );
     };
     drawEngine();
@@ -509,6 +536,11 @@ const SECTIONS = {
       h('div.brand', { html: `<div class="logo" style="width:56px;height:56px;border-radius:16px">${icon('logo')}</div>` }),
       h('div', { html: `<h2 style="margin:0">JustMusic</h2><span class="muted">Wersja ${esc(S.version)} · ${esc({ win32: 'Windows', darwin: 'macOS', linux: 'Linux' }[S.platform] || S.platform)}</span>` })));
     body.append(group('Aktualizacje', updatesPanel(row, toggleRow)));
+    body.append(group('Pomoc i opinie',
+      row('Ekran powitalny', 'Przejdź jeszcze raz przez podstawowe ustawienia.', btn('Pokaż', { cls: 'sm', icon: 'sparkles', onClick: () => import('./onboarding.js').then((m) => m.openOnboarding()) })),
+      row('Wyślij opinię', S.config?.feedbackDirect ? 'Zgłoś błąd lub pomysł – trafi prosto do autora, bez zakładania konta.' : 'Zgłoś błąd lub pomysł.', btn('Napisz', { cls: 'sm', icon: 'message', onClick: () => import('./feedback.js').then((m) => m.openFeedback()) })),
+      S.config?.feedbackDirect ? row('Ankieta', '30 sekund, anonimowo – pomaga zdecydować, co ulepszyć.', btn('Wypełnij', { cls: 'sm', onClick: () => import('./survey.js').then((m) => m.openSurvey(false)) })) : null,
+    ));
     body.append(group('Twoje dane',
       row('Folder danych aplikacji', `<span class="code">${esc(S.paths.userData)}</span>`, btn('Otwórz', { cls: 'sm', onClick: () => window.jm.shell.open(S.paths.userData) })),
       row('Kopia zapasowa', 'Zapisz playlisty, polubione i zakładki do pliku JSON (schowek).', btn('Kopiuj do schowka', { cls: 'sm', onClick: () => {

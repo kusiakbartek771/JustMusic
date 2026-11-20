@@ -43,6 +43,11 @@ jobs:
       - name: Instalacja
         run: npm ci
 
+      - name: Konfiguracja opinii (sekret, nie trafia do repozytorium)
+        env:
+          FEEDBACK_WEBHOOK: ${{ secrets.FEEDBACK_WEBHOOK }}
+        run: node -e "require('fs').writeFileSync('src/main/build-config.json', JSON.stringify({ feedbackWebhook: process.env.FEEDBACK_WEBHOOK || '' }))"
+
       - name: Budowanie i publikacja
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

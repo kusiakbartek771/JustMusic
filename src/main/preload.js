@@ -25,6 +25,9 @@ contextBridge.exposeInMainWorld('jm', {
     status: () => call('yt:status'),
     install: () => call('yt:install'),
     onInstallProgress: listen('yt:install-progress'),
+    installFfmpeg: () => call('ffmpeg:install'),
+    removeFfmpeg: () => call('ffmpeg:remove'),
+    onFfmpegProgress: listen('ffmpeg:progress'),
     search: (q, n) => call('yt:search', q, n),
     fromUrl: (url) => call('yt:url', url),
     stream: (id, fresh) => call('yt:stream', id, fresh),
@@ -99,7 +102,7 @@ contextBridge.exposeInMainWorld('jm', {
     status: () => call('voicemon:status'),
     onEvent: listen('voicemon:event'),
   },
-  feedback: { save: (text) => call('feedback:save', text) },
+  feedback: { save: (text) => call('feedback:save', text), send: (msg) => call('feedback:send', msg) },
   update: {
     state: () => call('update:state'),
     check: () => call('update:check'),

@@ -14,7 +14,14 @@ const system = require('./system');
 const discord = require('./discord');
 const updater = require('./updater');
 const voicemon = require('./voicemonitor');
+const ffmpegInst = require('./ffmpeg');
 const PKG = require('../../package.json');
+
+// Konfiguracja dodawana przy budowaniu (np. adres webhooka opinii z sekretów GitHub Actions).
+// Plik nie jest w repozytorium, żeby adres nie był publiczny.
+let BUILD = {};
+try { BUILD = require('./build-config.json'); } catch {}
+const FEEDBACK_WEBHOOK = process.env.JM_FEEDBACK_WEBHOOK || BUILD.feedbackWebhook || '';
 
 const RENDERER = path.join(__dirname, '..', 'renderer');
 const isMac = process.platform === 'darwin';
@@ -275,7 +282,7 @@ function setupIpc() {
       version: app.getVersion(),
       platform: process.platform,
       packaged: app.isPackaged,
-      config: PKG.justmusic || {},
+      config: { ...(PKG.justmusic || {}), feedbackDirect: /^https:\/\/(discord\.com|discordapp\.com)\/api\/webhooks\//.test(FEEDBACK_WEBHOOK) },
       sys: { os: `${os.type()} ${os.release()} (${os.arch()})`, electron: process.versions.electron, chrome: process.versions.chrome, desktop: process.env.XDG_CURRENT_DESKTOP || '', session: process.env.XDG_SESSION_TYPE || '' },
     };
   });
@@ -294,6 +301,11 @@ function setupIpc() {
   handle('yt:config', (c) => yt.setConfig(c));
   handle('yt:status', () => yt.detect());
   handle('yt:install', () => yt.install((p) => send('yt:install-progress', p)));
+  handle('ffmpeg:install', async () => {
+    await ffmpegInst.install((p) => send('ffmpeg:progress', p));
+    return yt.detect();
+  });
+  handle('ffmpeg:remove', async () => { await ffmpegInst.remove(); return yt.detect(); });
   handle('yt:search', (q, n) => yt.search(q, n));
   handle('yt:url', (url) => yt.fromUrl(url));
   handle('yt:stream', (id, fresh) => yt.stream(id, fresh));
@@ -406,6 +418,33 @@ function setupIpc() {
   handle('update:download', () => updater.download());
   handle('update:install', () => updater.install());
 
+  // ---- feedback: wysyłka bez konta (webhook Discord) ----
+  const sent = [];
+  handle('feedback:send', async (msg) => {
+    if (!FEEDBACK_WEBHOOK) throw new Error('Wysyłanie opinii nie jest skonfigurowane');
+    const now = Date.now();
+    while (sent.length && now - sent[0] > 3600e3) sent.shift();
+    if (sent.length && now - sent[sent.length - 1] < 30e3) throw new Error('Poczekaj chwilę przed wysłaniem kolejnej opinii');
+    if (sent.length >= 8) throw new Error('Limit opinii na godzinę – spróbuj później');
+    const clip = (t, n) => String(t || '').slice(0, n);
+    const embed = {
+      title: clip(msg.title || 'Opinia', 250),
+      description: clip(msg.text, 4000) || '—',
+      color: { bug: 0xff5c7a, idea: 0xfacc15, ui: 0x7c5cff, survey: 0x3ddc97 }[msg.kind] || 0x7c5cff,
+      fields: (msg.fields || []).slice(0, 20).map((f) => ({ name: clip(f.name, 250) || '—', value: clip(f.value, 1000) || '—', inline: !!f.inline })),
+      footer: { text: clip(`JustMusic ${app.getVersion()} · ${process.platform}`, 200) },
+      timestamp: new Date().toISOString(),
+    };
+    const res = await net.fetch(FEEDBACK_WEBHOOK + '?wait=true', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: msg.kind === 'survey' ? 'JustMusic – ankieta' : 'JustMusic – opinie', embeds: [embed], allowed_mentions: { parse: [] } }),
+    });
+    if (!res.ok) throw new Error('Nie udało się wysłać (HTTP ' + res.status + ')');
+    sent.push(now);
+    return true;
+  });
+
   // ---- feedback ----
   handle('feedback:save', async (text) => {
     const dir = path.join(app.getPath('userData'), 'feedback');
@@ -447,6 +486,7 @@ app.whenReady().then(async () => {
   updater.init((st) => send('update:status', { ...st, current: app.getVersion() }), () => appSettings);
   createWindow();
   if (appSettings.system?.tray !== false) system.setTray(true);
+  if (appSettings.system?.desktopEntry !== false) system.ensureDesktopEntry();
   yt.detect().catch(() => {});
 
   app.on('activate', () => {

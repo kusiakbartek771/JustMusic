@@ -19,7 +19,8 @@ i pełna customizacja wyglądu. Działa na **Windows, Linux i macOS**. Wszystkie
 | 🔌 **Pluginy** | sklep z pluginami (aplikacja startuje bez nich): Discord, OhManyKeybinds, EvenMoreColors, GoToSleep, Bouncy, Teksty piosenek, Wyłącznik czasowy, Wizualizer + API dla własnych |
 | 🖥️ **System** | ikona w zasobniku, zamykanie do zasobnika, postęp i przyciski na pasku zadań, skrót w menu (do przypięcia), autostart, przyciski okna w stylu aplikacji |
 | 🔄 **Aktualizacje** | automatyczne sprawdzanie i instalacja nowych wersji z GitHuba |
-| 💬 **Feedback** | zgłaszanie błędów i pomysłów z poziomu aplikacji |
+| 💬 **Feedback** | opinie i krótka ankieta wysyłane prosto do autora – bez zakładania konta |
+| 👋 **Ekran powitalny** | wygląd, układ, silnik (yt-dlp + ffmpeg jednym kliknięciem), foldery, pluginy i system przy pierwszym uruchomieniu |
 | 🎚️ **Dźwięk** | 10-pasmowy korektor z presetami, płynne wyciszanie, wznawianie sesji, wstępne ładowanie kolejnego utworu |
 | ⚡ **Wydajność** | czysty JS bez frameworka, wirtualizowane listy (tysiące utworów bez spadków), leniwe ładowanie okładek, przyrostowe skanowanie biblioteki |
 | ⌨️ **Sterowanie** | skróty klawiszowe, klawisze multimedialne, integracja z systemem (MPRIS na Linuksie, SMTC na Windows, Centrum sterowania na macOS) |
@@ -104,11 +105,17 @@ assets/          ikona aplikacji
 Dane użytkownika (ustawienia, playlisty, zakładki, pluginy użytkownika) są w folderze danych aplikacji:
 Linux `~/.config/JustMusic`, Windows `%APPDATA%\JustMusic`, macOS `~/Library/Application Support/JustMusic`.
 
-## Feedback
+## Feedback i ankieta
 
-W `package.json` → `"justmusic"` ustaw `feedbackEmail` (adres e-mail) i/lub `feedbackUrl`
-(np. `https://github.com/<user>/<repo>/issues/new`). Bez nich okno feedbacku pozwala skopiować
-zgłoszenie lub zapisać je do pliku.
+Opinie i ankiety trafiają na kanał Discord przez webhook. Adres webhooka **nie jest w repozytorium** –
+GitHub Actions wstawia go przy budowaniu z sekretu `FEEDBACK_WEBHOOK`:
+
+```bash
+gh secret set FEEDBACK_WEBHOOK   # wklej adres webhooka z: Discord → kanał → Integracje → Webhooki
+```
+
+Lokalnie można go podać zmienną `JM_FEEDBACK_WEBHOOK`. Bez webhooka okno opinii pozwala
+otworzyć zgłoszenie na GitHubie, skopiować je lub zapisać do pliku.
 
 ## Diagnostyka
 

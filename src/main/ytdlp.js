@@ -72,7 +72,9 @@ async function detect() {
       break;
     }
   }
-  ffmpeg = cfg.ffmpegPath && fs.existsSync(cfg.ffmpegPath) ? cfg.ffmpegPath : which('ffmpeg');
+  // kolejność: własna ścieżka → ffmpeg z systemu → ffmpeg pobrany przez JustMusic
+  const local = require('./ffmpeg').localFfmpeg();
+  ffmpeg = cfg.ffmpegPath && fs.existsSync(cfg.ffmpegPath) ? cfg.ffmpegPath : which('ffmpeg') || (fs.existsSync(local) ? local : null);
   return status();
 }
 
@@ -83,6 +85,7 @@ function status() {
     version,
     managed: bin === localBin(),
     ffmpeg,
+    ffmpegManaged: !!ffmpeg && ffmpeg === require('./ffmpeg').localFfmpeg(),
     installing: !!installing,
   };
 }

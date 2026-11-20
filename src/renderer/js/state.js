@@ -22,8 +22,9 @@ export const DEFAULT_SETTINGS = {
   spotify: { clientId: '', clientSecret: '' },
   library: { folders: [], scanOnStart: true },
   plugins: { enabled: {}, data: {}, catalogUrl: '' },
-  system: { tray: true, closeToTray: false, taskbarProgress: true },
+  system: { tray: true, closeToTray: false, taskbarProgress: true, desktopEntry: true },
   updates: { autoCheck: true, autoInstall: true },
+  onboarded: false,
 };
 
 export const DEFAULT_DATA = {
