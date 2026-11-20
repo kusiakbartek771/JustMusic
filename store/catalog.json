@@ -23,7 +23,7 @@
     {
       "id": "discord",
       "name": "Discord",
-      "version": "1.4.0",
+      "version": "1.5.0",
       "author": "JustMusic",
       "icon": "discord",
       "tags": [
@@ -32,7 +32,7 @@
         "głos"
       ],
       "short": "Pokazuje na Discordzie, czego słuchasz w JustMusic, i przycisza muzykę, gdy ktoś mówi na kanale głosowym.",
-      "description": "• status „Słucha” z tytułem, wykonawcą, okładką i paskiem czasu\n• przycisk „Posłuchaj na YouTube” w profilu\n• mini panel w odtwarzaczu z podglądem statusu: Aktywny / Prywatny / Nie przeszkadzać\n• nazwa i logo JustMusic w statusie („Słucha JustMusic”)\n• tryb prywatny (tylko „słucha muzyki”) i ukrywanie statusu przy pauzie\n• automatyczne przyciszanie, gdy ktoś mówi na kanale głosowym – na Linuksie po dźwięku (działa z Vesktop/Vencord, bez logowania), na Windows/macOS przez oficjalny klient Discord\n• status AFK razem z pluginem GoToSleep\nDziała od razu po pobraniu – wystarczy uruchomiony Discord (lub Vesktop z włączonym arRPC) na tym komputerze.",
+      "description": "• status „Słucha” z tytułem, wykonawcą, okładką i paskiem czasu\n• przycisk „Posłuchaj na YouTube” w profilu\n• mini panel w odtwarzaczu z podglądem statusu: Aktywny / Prywatny / Nie przeszkadzać\n• nazwa i logo JustMusic w statusie („Słucha JustMusic”)\n• tryb prywatny (tylko „słucha muzyki”) i ukrywanie statusu przy pauzie\n• automatyczne przyciszanie, gdy ktoś mówi na kanale głosowym – na Linuksie po dźwięku (działa z Vesktop/Vencord, bez logowania), na Windows/macOS przez oficjalny klient Discord\n• status AFK razem z pluginem GoToSleep, a z pluginem „Słuchajmy razem” – 👥 i liczba słuchających\nDziała od razu po pobraniu – wystarczy uruchomiony Discord (lub Vesktop z włączonym arRPC) na tym komputerze.",
       "main": "index.js",
       "files": [
         "index.js",
@@ -132,6 +132,27 @@
       "files": [
         "index.js",
         "manifest.json"
+      ]
+    },
+    {
+      "id": "together",
+      "name": "Słuchajmy razem",
+      "version": "1.0.0",
+      "author": "JustMusic",
+      "icon": "user",
+      "tags": [
+        "społeczność",
+        "znajomi",
+        "synchronizacja"
+      ],
+      "short": "Słuchaj muzyki ze znajomymi w tym samym momencie – jak wspólny głośnik przez internet. Wystarczy kod pokoju.",
+      "description": "• tworzysz pokój jednym kliknięciem i wysyłasz znajomym 8-znakowy kod\n• goście słyszą dokładnie to samo co Ty – utwór, pauza i przewijanie są synchronizowane co do ułamka sekundy\n• działa z YouTube, Spotify i plikami z dysku (goście dostają je automatycznie z YouTube)\n• lista słuchających, podgląd kolejki i latające reakcje 🔥❤️😂\n• goście mogą proponować utwory, a jeśli pozwolisz – także sterować\n• z pluginem Discord status pokazuje „Słuchamy razem”\n• bez kont i bez instalowania serwera – wiadomości są szyfrowane kodem pokoju",
+      "main": "index.js",
+      "files": [
+        "index.js",
+        "manifest.json",
+        "mqtt.js",
+        "room.js"
       ]
     },
     {

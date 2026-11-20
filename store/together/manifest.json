@@ -1,0 +1,15 @@
+{
+  "id": "together",
+  "name": "Słuchajmy razem",
+  "version": "1.0.0",
+  "author": "JustMusic",
+  "icon": "user",
+  "tags": [
+    "społeczność",
+    "znajomi",
+    "synchronizacja"
+  ],
+  "short": "Słuchaj muzyki ze znajomymi w tym samym momencie – jak wspólny głośnik przez internet. Wystarczy kod pokoju.",
+  "description": "• tworzysz pokój jednym kliknięciem i wysyłasz znajomym 8-znakowy kod\n• goście słyszą dokładnie to samo co Ty – utwór, pauza i przewijanie są synchronizowane co do ułamka sekundy\n• działa z YouTube, Spotify i plikami z dysku (goście dostają je automatycznie z YouTube)\n• lista słuchających, podgląd kolejki i latające reakcje 🔥❤️😂\n• goście mogą proponować utwory, a jeśli pozwolisz – także sterować\n• z pluginem Discord status pokazuje „Słuchamy razem”\n• bez kont i bez instalowania serwera – wiadomości są szyfrowane kodem pokoju",
+  "main": "index.js"
+}

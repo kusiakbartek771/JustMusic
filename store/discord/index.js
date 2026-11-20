@@ -7,7 +7,7 @@ export default function activate(api) {
   const { h, esc } = api;
   const D = {
     appId: DEFAULT_APP_ID, secret: '', showCover: true, showTime: true, showPaused: true, showButton: true,
-    privacy: false, mode: 'active', listName: 'app', showLogo: true, duck: false, duckLevel: 25, duckSelf: false, duckMethod: 'auto', duckSens: 60, afkStatus: true,
+    privacy: false, mode: 'active', listName: 'app', showLogo: true, duck: false, duckLevel: 25, duckSelf: false, duckMethod: 'auto', duckSens: 60, afkStatus: true, togetherStatus: true,
   };
   const cfg = () => {
     const c = { ...D, ...api.storage.get('cfg', {}) };
@@ -19,6 +19,7 @@ export default function activate(api) {
   let status = { connected: false, user: null, voice: {} };
   let lastErr = '';
   let afk = !!api.bus.last('afk');
+  let together = api.bus.last('together') || { active: false }; // plugin „Słuchajmy razem”
   const speaking = new Set();
   let audioSpeaking = false;   // wykrywanie po dźwięku (Linux)
   let audioApps = [];
@@ -51,14 +52,18 @@ export default function activate(api) {
     if (!playing && !c.showPaused && !afk) return null;
     // status_display_type: 0 = „Słucha JustMusic”, 2 = „Słucha <tytuł>” na liście członków
     const a = { type: 2, status_display_type: c.listName === 'song' && !c.privacy ? 2 : 0, instance: false };
+    const tg = c.togetherStatus && together.active ? together : null;
     if (c.privacy) {
-      a.details = 'Słucha muzyki';
+      a.details = tg ? 'Słucha muzyki ze znajomymi' : 'Słucha muzyki';
       a.state = afk ? '💤 AFK · JustMusic' : 'w JustMusic';
     } else {
       a.details = pad(t.title, 'Bez tytułu');
       const who = t.artist ? t.artist : 'JustMusic';
-      a.state = pad(afk ? `💤 AFK · ${who}` : playing ? who : `⏸ Wstrzymano · ${who}`, 'JustMusic');
+      const base = afk ? `💤 AFK · ${who}` : playing ? who : `⏸ Wstrzymano · ${who}`;
+      a.state = pad(tg ? (tg.code ? `👥 Razem (kod ${tg.code}) · ${base}` : `👥 Słuchamy razem · ${base}`) : base, 'JustMusic');
     }
+    // „(2 z 50)” przy statusie – liczba osób w pokoju
+    if (tg && tg.count > 1 && tg.party) a.party = { id: 'jm-' + tg.party, size: [tg.count, 50] };
     a.assets = { large_text: pad(c.privacy ? 'JustMusic' : t.album ? `${t.album} · JustMusic` : 'JustMusic', 'JustMusic') };
     const art = t.thumb && /^https:\/\//.test(t.thumb) ? t.thumb.replace('/mqdefault.jpg', '/hqdefault.jpg') : null;
     if (c.showCover && art && !c.privacy) a.assets.large_image = art;
@@ -136,6 +141,7 @@ export default function activate(api) {
     lastT = t;
   });
   api.bus.on('afk', (v) => { if (cfg().afkStatus) { afk = !!v; push(true); } });
+  api.bus.on('together', (v) => { together = v || { active: false }; push(true); });
 
   // ---- ustawienia ----
   api.ui.addSettings((el) => {
@@ -169,6 +175,7 @@ export default function activate(api) {
         api.ui.settingRow('Na liście członków', 'Co znajomi widzą pod Twoim nickiem.', api.ui.select([['app', 'Słucha JustMusic'], ['song', 'Słucha <tytuł utworu>']], c.listName, (v) => { save({ listName: v }); push(true); })),
         S('Logo JustMusic', 'Mała ikona JustMusic przy okładce w statusie.', 'showLogo'),
         S('Status AFK', 'Gdy GoToSleep wykryje nieobecność, status pokaże 💤 AFK.', 'afkStatus'),
+        S('Słuchajmy razem', 'Z pluginem „Słuchajmy razem” status pokaże 👥 i liczbę słuchających.', 'togetherStatus'),
         S('Przyciszaj, gdy ktoś mówi', 'Muzyka cichnie, gdy na kanale głosowym ktoś mówi.', 'duck'),
         ...(c.duck ? [
           (() => {
