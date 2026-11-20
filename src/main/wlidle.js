@@ -34,20 +34,23 @@ function start() {
   if (sock || !supported()) return;
   const display = process.env.WAYLAND_DISPLAY;
   const p = path.isAbsolute(display) ? display : path.join(process.env.XDG_RUNTIME_DIR, display);
-  sock = net.createConnection(p);
+  const me = net.createConnection(p);
+  sock = me;
+  nextId = 2; // numeracja obiektów zaczyna się od nowa przy każdym połączeniu (inaczej kompozytor zgłasza błąd)
+  idleSince = 0;
   const REGISTRY = nextId++;
   const SYNC = nextId++;
   const globals = {};
   let notifier = null;
   let seat = null;
 
-  sock.on('connect', () => {
+  me.on('connect', () => {
     // wl_display.get_registry + wl_display.sync (koniec listy globali)
-    sock.write(Buffer.concat([msg(1, 1, [u32(REGISTRY)]), msg(1, 0, [u32(SYNC)])]));
+    me.write(Buffer.concat([msg(1, 1, [u32(REGISTRY)]), msg(1, 0, [u32(SYNC)])]));
   });
 
   let buf = Buffer.alloc(0);
-  sock.on('data', (d) => {
+  me.on('data', (d) => {
     buf = buf.length ? Buffer.concat([buf, d]) : d;
     while (buf.length >= 8) {
       const id = buf.readUInt32LE(0);
@@ -79,7 +82,7 @@ function start() {
   function bind(iface, version) {
     const g = globals[iface];
     const id = nextId++;
-    sock.write(msg(REGISTRY, 0, [u32(g.name), str(iface), u32(Math.min(version, g.version)), u32(id)]));
+    me.write(msg(REGISTRY, 0, [u32(g.name), str(iface), u32(Math.min(version, g.version)), u32(id)]));
     return id;
   }
 
@@ -90,13 +93,14 @@ function start() {
     const n = bind('ext_idle_notifier_v1', Math.min(2, v));
     const notification = nextId++;
     // v2: get_input_idle_notification (ignoruje blokady), v1: get_idle_notification
-    sock.write(msg(n, v >= 2 ? 2 : 1, [u32(notification), u32(THRESHOLD_MS), u32(seat)]));
+    me.write(msg(n, v >= 2 ? 2 : 1, [u32(notification), u32(THRESHOLD_MS), u32(seat)]));
     notifier = { id: n, notification };
     ready = true;
   }
 
-  sock.on('error', () => stop());
-  sock.on('close', () => { sock = null; ready = false; });
+  // zdarzenia starego gniazda nie mogą psuć nowego połączenia
+  me.on('error', () => { if (sock === me) stop(); });
+  me.on('close', () => { if (sock === me) { sock = null; ready = false; } });
 }
 
 function stop() {

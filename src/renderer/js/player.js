@@ -409,22 +409,31 @@ function fadeOut() {
   rampVolume(0, ms, () => { audio.pause(); audio.volume = volumeValue(); });
 }
 
+// Płynna zmiana głośności. Zegar zamiast requestAnimationFrame: rAF nie działa, gdy okno jest
+// niewidoczne (zablokowany ekran, zasłonięte okno, Wayland) – ściszanie stawało wtedy w połowie
+// i po powrocie muzyka „grała” bez dźwięku. Krok liczony z upływu czasu, więc nawet rzadki zegar kończy na czas.
 let rampId = 0;
 function rampVolume(target, ms, done) {
   const id = ++rampId;
   const start = audio.volume;
   const t0 = performance.now();
-  const step = (t) => {
+  target = Math.max(0, Math.min(1, target));
+  const step = () => {
     if (id !== rampId) return;
-    const k = Math.min(1, (t - t0) / ms);
-    audio.volume = start + (target - start) * k;
-    if (k < 1) requestAnimationFrame(step); else done?.();
+    const k = Math.min(1, (performance.now() - t0) / ms);
+    audio.volume = Math.max(0, Math.min(1, start + (target - start) * k));
+    if (k < 1) setTimeout(step, 16);
+    else done?.();
   };
-  requestAnimationFrame(step);
+  step();
 }
 
 export function pause() { if (!audio.paused) fadeOut(); }
-export function play() { if (audio.paused) toggle(); }
+export function play() {
+  if (audio.paused) return toggle();
+  // „gra”, ale mogło zostać przerwane ściszanie – dociągnij głośność do właściwej
+  if (Math.abs(audio.volume - volumeValue()) > 0.01) rampVolume(volumeValue(), S.settings.playback.fadeMs || 250);
+}
 
 export function seek(t) {
   if (!Number.isFinite(audio.duration)) return;
