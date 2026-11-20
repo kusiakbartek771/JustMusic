@@ -344,7 +344,9 @@ const SECTIONS = {
       btn('Folder pluginów', { icon: 'folder', cls: 'sm ghost', onClick: () => window.jm.plugins.openFolder() }),
       btn('Przeładuj', { icon: 'refresh', cls: 'sm ghost', onClick: async () => { await reloadPlugins(); toast('Przeładowano pluginy'); refresh(); } })),
       installedBox,
-      h('h3', { text: 'Sklep z pluginami', style: { margin: '28px 0 12px', fontSize: '17px' } }),
+      h('div', { style: { display: 'flex', alignItems: 'center', gap: '8px', margin: '28px 0 12px' } },
+        h('h3', { text: 'Sklep z pluginami', style: { margin: '0', flex: '1', fontSize: '17px' } }),
+        btn('Pluginy na GitHubie', { icon: 'external', cls: 'sm ghost', onClick: () => window.jm.shell.external('https://github.com/kusiakbartek771/JustMusic/tree/main/store') })),
       storeBox);
 
     // --- zainstalowane ---
@@ -386,7 +388,7 @@ const SECTIONS = {
         const card = h('div.store-card' + (inst ? '.installed' : ''));
         card.append(...[
           h('div.top', null, h('div.pic', { html: icon(p.icon || 'puzzle') }),
-            h('div', { style: { minWidth: '0' } }, h('div.nm', { text: p.name }), h('div.meta', { text: `v${p.version}${p.author ? ' · ' + p.author : ''}` }))),
+            h('div', { style: { minWidth: '0' } }, h('div.nm', { text: p.name }), h('div.meta', { text: `v${p.version}${p.author ? ' · ' + p.author : ''}${p.remote ? ' · GitHub' : ' · offline'}` }))),
           h('div.short', { text: p.short || p.description }),
           p.tags?.length ? h('div.tags', null, ...p.tags.map((t) => h('span', { text: t }))) : null,
           p.description && p.description !== p.short ? h('details', null, h('summary', { text: 'Więcej informacji' }), h('p', { text: p.description })) : null,

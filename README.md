@@ -32,9 +32,15 @@ Pobierz najnowszą wersję ze strony **[Releases](https://github.com/kusiakbarte
 |---|---|---|
 | Windows | `JustMusic-Installer.exe` | mały instalator (~1–2 MB) – sam pobiera aplikację, **idealny do wysłania na Discordzie** |
 | Windows | `JustMusic-…-portable.exe` | wersja przenośna, bez instalacji |
-| Linux | `JustMusic-Installer-linux-mac.sh` | mały instalator: `bash JustMusic-Installer-linux-mac.sh` |
+| Linux | `JustMusic-Installer-linux-mac.sh` | mały instalator: `bash JustMusic-Installer-linux-mac.sh` (albo `chmod +x` i dwuklik) |
 | Linux | `JustMusic-x86_64.AppImage` / `.deb` / `.pacman` | pełne paczki |
 | macOS | `JustMusic-Installer-linux-mac.sh` lub `.dmg` | (aplikacja nie jest podpisana – przy `.dmg` otwórz ją prawym przyciskiem → Otwórz) |
+
+Albo jednym poleceniem w terminalu (Linux/macOS):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/kusiakbartek771/JustMusic/main/installer/install.sh | bash
+```
 
 ### Aktualizacje
 JustMusic sam sprawdza aktualizacje przy starcie i co 6 godzin (Ustawienia → O aplikacji).

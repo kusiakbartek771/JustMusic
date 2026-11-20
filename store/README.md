@@ -1,7 +1,16 @@
 # Pluginy JustMusic
 
 JustMusic startuje **bez pluginów** – instaluje się je ze sklepu (Ustawienia → Pluginy).
-Ten folder (`store/`) to katalog sklepu dołączony do aplikacji. Można też podać zdalny katalog
+Sklep pobiera pluginy **z tego folderu na GitHubie** (`store/catalog.json`), więc nowe pluginy
+i ich aktualizacje trafiają do użytkowników bez wydawania nowej wersji aplikacji.
+Kopia folderu jest też dołączona do aplikacji – sklep działa offline.
+
+### Dodawanie / aktualizacja pluginu
+1. Dodaj lub zmień folder `store/<id>/` (nazwa folderu = `id` z manifestu) i podbij `version` w `manifest.json`.
+2. `npm run catalog` – odświeża `store/catalog.json`.
+3. `git commit` i `git push` – użytkownicy zobaczą „Aktualizuj” w sklepie.
+
+Ten folder (`store/`) to katalog sklepu. Można też podać zdalny katalog
 (`catalog.json` przez HTTPS) w Ustawienia → Pluginy → Zaawansowane, albo w `package.json` → `justmusic.pluginCatalogUrl`:
 
 ```json

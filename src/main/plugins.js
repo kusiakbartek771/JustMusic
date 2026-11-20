@@ -86,7 +86,8 @@ async function catalog(remoteUrl) {
   for (const p of local) map.set(p.id, p);
   for (const p of remote) {
     const cur = map.get(p.id);
-    if (!cur || String(p.version).localeCompare(String(cur.version), undefined, { numeric: true }) > 0) map.set(p.id, p);
+    // wersja z GitHuba ma pierwszeństwo (gdy nie starsza niż dołączona do aplikacji)
+    if (!cur || String(p.version).localeCompare(String(cur.version), undefined, { numeric: true }) >= 0) map.set(p.id, p);
   }
   return { items: [...map.values()], error };
 }

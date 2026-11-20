@@ -2,7 +2,13 @@
 # JustMusic – mały instalator (Linux / macOS).
 # Pobiera najnowszą wersję z GitHuba, instaluje ją dla bieżącego użytkownika i uruchamia.
 # Użycie:  bash JustMusic-Installer-linux-mac.sh
+#     albo: curl -fsSL https://raw.githubusercontent.com/kusiakbartek771/JustMusic/main/installer/install.sh | bash
+#     albo: dwuklik w menedżerze plików (plik musi mieć prawo wykonywania: chmod +x)
 set -euo pipefail
+
+# Gdy uruchomiono dwuklikiem, okno terminala nie powinno zniknąć od razu
+pause() { if [ -t 0 ] && [ -t 1 ]; then printf '\nNaciśnij Enter, aby zamknąć…'; read -r _ || true; fi; }
+trap 'code=$?; [ $code -ne 0 ] && pause; exit $code' EXIT
 
 REPO="kusiakbartek771/JustMusic"
 API="https://api.github.com/repos/${REPO}/releases/latest"
@@ -23,7 +29,7 @@ urls() { printf '%s' "$JSON" | grep '"browser_download_url"' | sed -E 's/.*"(htt
 say "Najnowsza wersja: ${TAG}"
 
 TMP="$(mktemp -d)"
-trap 'rm -rf "$TMP"' EXIT
+trap 'code=$?; rm -rf "$TMP"; [ $code -ne 0 ] && pause; exit $code' EXIT
 
 if [ "$OS" = "Linux" ]; then
   case "$ARCH" in
@@ -89,3 +95,4 @@ else
   fail "Ten instalator jest dla Linuksa i macOS. Na Windows użyj JustMusic-Installer.exe."
 fi
 say "Gotowe! Miłego słuchania 🎵"
+pause
