@@ -23,7 +23,7 @@
     {
       "id": "discord",
       "name": "Discord",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "author": "JustMusic",
       "icon": "discord",
       "tags": [
@@ -32,7 +32,7 @@
         "głos"
       ],
       "short": "Pokazuje na Discordzie, czego słuchasz w JustMusic, i przycisza muzykę, gdy ktoś mówi na kanale głosowym.",
-      "description": "• status „Słucha” z tytułem, wykonawcą, okładką i paskiem czasu\n• przycisk „Posłuchaj na YouTube” w profilu\n• mini panel w odtwarzaczu: szybkie przełączanie Aktywny / Prywatny / Nie przeszkadzać\n• tryb prywatny (tylko „słucha muzyki”) i ukrywanie statusu przy pauzie\n• automatyczne przyciszanie, gdy ktoś mówi na kanale głosowym (opcjonalnie też gdy Ty mówisz)\n• status AFK razem z pluginem GoToSleep\nWymaga uruchomionego Discorda na tym komputerze i darmowego Application ID (instrukcja w ustawieniach pluginu).",
+      "description": "• status „Słucha” z tytułem, wykonawcą, okładką i paskiem czasu\n• przycisk „Posłuchaj na YouTube” w profilu\n• mini panel w odtwarzaczu z podglądem statusu: Aktywny / Prywatny / Nie przeszkadzać\n• nazwa i logo JustMusic w statusie („Słucha JustMusic”)\n• tryb prywatny (tylko „słucha muzyki”) i ukrywanie statusu przy pauzie\n• automatyczne przyciszanie, gdy ktoś mówi na kanale głosowym (opcjonalnie też gdy Ty mówisz)\n• status AFK razem z pluginem GoToSleep\nWymaga uruchomionego Discorda na tym komputerze i darmowego Application ID (instrukcja w ustawieniach pluginu).",
       "main": "index.js",
       "files": [
         "index.js",

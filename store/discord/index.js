@@ -1,9 +1,11 @@
 // Plugin: Discord – status „Słucha …” (Rich Presence) + przyciszanie, gdy ktoś mówi.
+const LOGO = 'https://raw.githubusercontent.com/kusiakbartek771/JustMusic/main/assets/icon.png';
+
 export default function activate(api) {
   const { h, esc } = api;
   const D = {
     appId: '', secret: '', showCover: true, showTime: true, showPaused: true, showButton: true,
-    privacy: false, mode: 'active', duck: false, duckLevel: 25, duckSelf: false, afkStatus: true,
+    privacy: false, mode: 'active', listName: 'app', showLogo: true, duck: false, duckLevel: 25, duckSelf: false, afkStatus: true,
   };
   const cfg = () => ({ ...D, ...api.storage.get('cfg', {}) });
   const save = (patch) => api.storage.set('cfg', { ...cfg(), ...patch });
@@ -29,7 +31,8 @@ export default function activate(api) {
     if (c.mode === 'dnd') return null; // „Nie przeszkadzać” – bez statusu muzyki
     if (c.mode === 'private') c.privacy = true;
     if (!playing && !c.showPaused && !afk) return null;
-    const a = { type: 2, status_display_type: 2, instance: false };
+    // status_display_type: 0 = „Słucha JustMusic”, 2 = „Słucha <tytuł>” na liście członków
+    const a = { type: 2, status_display_type: c.listName === 'song' && !c.privacy ? 2 : 0, instance: false };
     if (c.privacy) {
       a.details = 'Słucha muzyki';
       a.state = afk ? '💤 AFK · JustMusic' : 'w JustMusic';
@@ -41,6 +44,11 @@ export default function activate(api) {
     a.assets = { large_text: pad(c.privacy ? 'JustMusic' : t.album ? `${t.album} · JustMusic` : 'JustMusic', 'JustMusic') };
     const art = t.thumb && /^https:\/\//.test(t.thumb) ? t.thumb.replace('/mqdefault.jpg', '/hqdefault.jpg') : null;
     if (c.showCover && art && !c.privacy) a.assets.large_image = art;
+    // logo JustMusic: mała ikona przy okładce albo duży obrazek, gdy okładki brak
+    if (c.showLogo) {
+      if (a.assets.large_image) { a.assets.small_image = LOGO; a.assets.small_text = 'JustMusic'; }
+      else a.assets.large_image = LOGO;
+    }
     if (playing && c.showTime) {
       const dur = api.player.duration;
       const start = Date.now() - api.player.time * 1000;
@@ -138,6 +146,8 @@ export default function activate(api) {
         S('Pokazuj przy pauzie', 'Wyłącz, aby status znikał, gdy muzyka nie gra.', 'showPaused'),
         S('Przycisk „Posłuchaj”', 'Znajomi mogą otworzyć utwór na YouTube/Spotify.', 'showButton'),
         api.ui.settingRow('Status muzyki', 'To samo przełączysz szybko ikoną Discorda w odtwarzaczu.', api.ui.select([['active', '🟢 Aktywny'], ['private', '🔒 Prywatny'], ['dnd', '⛔ Nie przeszkadzać (ukryty)']], c.mode, (v) => { save({ mode: v }); push(true); paintBtn(); })),
+        api.ui.settingRow('Na liście członków', 'Co znajomi widzą pod Twoim nickiem.', api.ui.select([['app', 'Słucha JustMusic'], ['song', 'Słucha <tytuł utworu>']], c.listName, (v) => { save({ listName: v }); push(true); })),
+        S('Logo JustMusic', 'Mała ikona JustMusic przy okładce w statusie.', 'showLogo'),
         S('Status AFK', 'Gdy GoToSleep wykryje nieobecność, status pokaże 💤 AFK.', 'afkStatus'),
         S('Przyciszaj, gdy ktoś mówi', 'Na kanale głosowym, na którym jesteś. Wymaga jednorazowej autoryzacji konta.', 'duck'),
         ...(c.duck ? [
@@ -172,16 +182,22 @@ export default function activate(api) {
   }
 
   // ---------------- mini panel w odtwarzaczu ----------------
+  const svg = (d) => `<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+  const ICONS = {
+    active: svg('<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>'),
+    private: svg('<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>'),
+    dnd: svg('<circle cx="12" cy="12" r="9"/><path d="M8 12h8"/>'),
+  };
   const MODES = [
-    ['active', '🟢', 'Aktywny', 'Znajomi widzą, czego słuchasz'],
-    ['private', '🔒', 'Prywatny', 'Tylko „Słucha muzyki” – bez tytułu'],
-    ['dnd', '⛔', 'Nie przeszkadzać', 'Ukrywa muzykę na Discordzie'],
+    ['active', 'Aktywny', 'Znajomi widzą, czego słuchasz'],
+    ['private', 'Prywatny', 'Tylko „Słucha muzyki”, bez tytułu'],
+    ['dnd', 'Nie przeszkadzać', 'Muzyka znika z Twojego profilu'],
   ];
   const playerBtn = api.ui.addPlayerButton({ id: 'panel', icon: 'discord', title: 'Discord', onClick: (e, el) => openPanel(el) });
   const paintBtn = () => {
     const c = cfg();
     playerBtn.setActive(status.connected && c.mode !== 'dnd');
-    playerBtn.setTitle(`Discord: ${status.connected ? MODES.find((m) => m[0] === c.mode)?.[2] || '' : 'nie połączono'}`);
+    playerBtn.setTitle(`Discord: ${status.connected ? MODES.find((m) => m[0] === c.mode)?.[1] || '' : 'nie połączono'}`);
   };
   api.discord.on(() => setTimeout(paintBtn, 0));
   paintBtn();
@@ -190,49 +206,73 @@ export default function activate(api) {
     const wrap = h('div.dc-panel');
     const draw = () => {
       const c = cfg();
-      const head = h('div.dc-head', { html: `${api.icon('discord')}<div><b>Discord</b><small>${status.connected ? `<span class="status-dot ok"></span>${esc(status.user?.name || 'Połączono')}` : `<span class="status-dot"></span>${esc(lastErr || 'Nie połączono')}`}</small></div>` });
-      if (!status.connected) head.append(api.ui.button('Połącz', { cls: 'sm', onClick: async () => { await connect(); draw(); } }));
+      const t = api.player.current;
+      const preview = c.mode === 'dnd' || !t ? null
+        : h('div.dc-preview', null,
+          h('div.dc-art', { style: t.thumb && c.showCover && c.mode !== 'private' ? { backgroundImage: `url("${t.thumb}")` } : {} }, c.showLogo ? h('img', { src: LOGO, alt: '' }) : null),
+          h('div.dc-txt', { html: `<small>Słucha JustMusic</small><b>${esc(c.mode === 'private' ? 'Słucha muzyki' : t.title)}</b><span>${esc(c.mode === 'private' ? 'w JustMusic' : t.artist || '')}</span>` }));
+      const head = h('div.dc-head', null,
+        h('div.dc-ic', { html: api.icon('discord') }),
+        h('div.dc-who', { html: `<b>Discord</b><small>${status.connected ? `<span class="status-dot ok"></span>${esc(status.user?.name || 'Połączono')}` : `<span class="status-dot"></span>${esc(lastErr || 'Nie połączono')}`}</small>` }),
+        status.connected ? null : api.ui.button('Połącz', { cls: 'sm', onClick: async () => { await connect(); draw(); } }));
       const modes = h('div.dc-modes');
-      for (const [k, emoji, label, hint] of MODES) {
+      for (const [k, label, hint] of MODES) {
         modes.append(h('button.dc-mode' + (c.mode === k ? '.on' : ''), {
-          html: `<span class="e">${emoji}</span><span><b>${label}</b><small>${hint}</small></span>`,
-          on: { click: () => { save({ mode: k }); push(true); paintBtn(); draw(); } },
+          html: `${ICONS[k]}<span><b>${label}</b><small>${hint}</small></span>`,
+          on: { click: () => { save({ mode: k }); push(true); paintBtn(); draw(); api.ui.toast(`Discord: ${label}`); } },
         }));
       }
-      const quick = (label, key, after) => h('label.dc-toggle', null, h('span', { text: label }), api.ui.switch(c[key], (v) => { save({ [key]: v }); after?.(v); push(true); draw(); }));
-      wrap.replaceChildren(
+      const row = (label, key, after) => h('label.dc-row', null, h('span', { text: label }), api.ui.switch(c[key], (v) => { save({ [key]: v }); after?.(v); push(true); draw(); }));
+      wrap.replaceChildren(...[
         head,
-        h('div.dc-label', { text: 'Status muzyki' }),
+        preview,
+        h('div.dc-label', { text: 'Widoczność' }),
         modes,
         h('div.dc-label', { text: 'Szybkie opcje' }),
-        quick('Okładka', 'showCover'),
-        quick('Pasek czasu', 'showTime'),
-        quick('Przycisk „Posłuchaj”', 'showButton'),
-        quick('Przyciszaj, gdy ktoś mówi', 'duck', (v) => toggleDuck(v)),
-        h('p.dc-note', { text: 'Status konta (Dostępny / Zaraz wracam / Nie przeszkadzać) zmienisz tylko w samym Discordzie – Discord nie pozwala aplikacjom go zmieniać.' }),
-        h('button.dc-more', { text: 'Wszystkie ustawienia →', on: { click: () => { api.ui.navigate('settings', 'plugins'); document.querySelector('.popover')?.remove(); } } }),
-      );
+        h('div.dc-group', null,
+          row('Okładka utworu', 'showCover'),
+          row('Logo JustMusic', 'showLogo'),
+          row('Pasek czasu', 'showTime'),
+          row('Przycisk „Posłuchaj”', 'showButton'),
+          row('Przyciszaj, gdy ktoś mówi', 'duck', (v) => toggleDuck(v))),
+        h('div.dc-foot', null,
+          h('span', { text: 'Status konta zmienisz w Discordzie' }),
+          h('button.link', { text: 'Ustawienia', on: { click: () => { api.ui.navigate('settings', 'plugins'); document.querySelector('.popover')?.remove(); } } })),
+      ].filter(Boolean));
     };
     draw();
     api.ui.popover(anchor, wrap, { align: 'right' });
   }
 
+  // wygląd zgodny z resztą JustMusic (zmienne motywu, akcent, zaokrąglenia)
   api.ui.addStyle(`
-    .dc-panel { width: 300px; display: flex; flex-direction: column; gap: 6px; }
-    .dc-head { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
-    .dc-head > svg { width: 26px; height: 26px; color: #5865f2; flex: none; }
-    .dc-head > div { flex: 1; min-width: 0; }
-    .dc-head small { display: block; color: var(--text-dim); font-size: 12px; }
-    .dc-label { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--text-dim); font-weight: 700; margin-top: 8px; }
+    .dc-panel { width: 320px; display: flex; flex-direction: column; gap: 8px; }
+    .dc-head { display: flex; align-items: center; gap: 12px; }
+    .dc-ic { width: 40px; height: 40px; border-radius: var(--radius-sm); display: grid; place-items: center; flex: none; background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 45%, #000)); color: var(--accent-text); }
+    .dc-ic svg { width: 22px; height: 22px; }
+    .dc-who { flex: 1; min-width: 0; }
+    .dc-who b { display: block; font-size: 15px; }
+    .dc-who small { display: flex; align-items: center; color: var(--text-dim); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .dc-preview { display: flex; gap: 12px; align-items: center; padding: 10px; border-radius: var(--radius); background: var(--surface-2); border: 1px solid var(--border); }
+    .dc-art { width: 56px; height: 56px; border-radius: var(--cover-radius); background: var(--elevated) center/cover; position: relative; flex: none; }
+    .dc-art img { position: absolute; right: -5px; bottom: -5px; width: 22px; height: 22px; border-radius: 7px; border: 2px solid var(--surface-2); }
+    .dc-txt { min-width: 0; display: flex; flex-direction: column; }
+    .dc-txt small { font-size: 11px; color: var(--text-dim); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+    .dc-txt b, .dc-txt span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .dc-txt span { font-size: 12px; color: var(--text-dim); }
+    .dc-label { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--text-dim); font-weight: 700; margin-top: 4px; }
     .dc-modes { display: flex; flex-direction: column; gap: 4px; }
-    .dc-mode { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: var(--radius-sm); border: 1px solid transparent; background: var(--surface-2); cursor: pointer; text-align: left; transition: all var(--speed); }
-    .dc-mode:hover { border-color: color-mix(in srgb, var(--text) 20%, transparent); }
-    .dc-mode.on { border-color: var(--accent); background: var(--accent-soft); }
-    .dc-mode .e { font-size: 18px; }
+    .dc-mode { display: flex; align-items: center; gap: 12px; padding: 9px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: transparent; color: var(--text); cursor: pointer; text-align: left; transition: background var(--speed), border-color var(--speed); }
+    .dc-mode svg { width: 18px; height: 18px; color: var(--text-dim); flex: none; }
     .dc-mode small { display: block; color: var(--text-dim); font-size: 11px; }
-    .dc-toggle { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 13px; padding: 4px 2px; cursor: pointer; }
-    .dc-note { font-size: 11px; color: var(--text-dim); margin: 6px 0 0; line-height: 1.4; }
-    .dc-more { background: none; border: 0; color: var(--accent); font-weight: 600; cursor: pointer; text-align: left; padding: 4px 0 0; }
+    .dc-mode:hover { background: var(--hover); }
+    .dc-mode.on { border-color: var(--accent); background: var(--accent-soft); }
+    .dc-mode.on svg { color: var(--accent); }
+    .dc-group { border: 1px solid var(--border); border-radius: var(--radius); padding: 2px 12px; background: color-mix(in srgb, var(--surface-2) 55%, transparent); }
+    .dc-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 13px; padding: 7px 0; cursor: pointer; border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent); }
+    .dc-row:last-child { border-bottom: 0; }
+    .dc-foot { display: flex; align-items: center; justify-content: space-between; font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+    .dc-foot .link { background: none; border: 0; color: var(--accent); font-weight: 700; cursor: pointer; font-size: 12px; }
   `);
 
   connect(true);
