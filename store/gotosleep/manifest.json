@@ -1,11 +1,15 @@
 {
   "id": "gotosleep",
   "name": "GoToSleep",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "author": "JustMusic",
   "icon": "zzz",
-  "tags": ["AFK", "sen", "automatyzacja"],
+  "tags": [
+    "AFK",
+    "sen",
+    "automatyzacja"
+  ],
   "short": "Gdy nie ma Cię przy komputerze przez 3 minuty, muzyka stopniowo cichnie, a Ty dostajesz status AFK.",
-  "description": "• wykrywa brak aktywności myszy i klawiatury w całym systemie (domyślnie 3 minuty)\n• płynnie przycisza muzykę, a na końcu może ją zatrzymać\n• pokazuje znacznik „AFK” w aplikacji i – z pluginem Discord – status 💤 AFK na Discordzie\n• po powrocie przywraca głośność i (opcjonalnie) wznawia odtwarzanie\n• można też ręcznie włączyć tryb AFK (akcja do przypisania w OhManyKeybinds)",
+  "description": "• wykrywa brak aktywności myszy i klawiatury w całym systemie (domyślnie 3 minuty) – także na Linuksie z Waylandem (KDE, GNOME, Hyprland, Sway)\n• płynnie przycisza muzykę, a na końcu może ją zatrzymać\n• pokazuje znacznik „AFK” w aplikacji i – z pluginem Discord – status 💤 AFK na Discordzie\n• po powrocie przywraca głośność i (opcjonalnie) wznawia odtwarzanie\n• można też ręcznie włączyć tryb AFK (akcja do przypisania w OhManyKeybinds)",
   "main": "index.js"
 }

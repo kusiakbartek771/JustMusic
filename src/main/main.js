@@ -487,6 +487,7 @@ app.whenReady().then(async () => {
   createWindow();
   if (appSettings.system?.tray !== false) system.setTray(true);
   if (appSettings.system?.desktopEntry !== false) system.ensureDesktopEntry();
+  system.idleSeconds(); // Wayland: połącz z kompozytorem od razu, żeby liczyć bezczynność od startu
   yt.detect().catch(() => {});
 
   app.on('activate', () => {

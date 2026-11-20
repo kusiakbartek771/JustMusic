@@ -27,10 +27,12 @@ export default function activate(api) {
     const appIdle = (Date.now() - lastAppInput) / 1000;
     if (c.source === 'app') return appIdle;
     let sys = 0;
-    try { sys = (await api.system.idle()).seconds || 0; } catch {}
+    let reliable = false;
+    try { const r = await api.system.idle(); sys = r.seconds || 0; reliable = r.reliable === true; } catch {}
     if (sys > 2) systemIdleWorks = true;
-    if (c.source === 'system' || systemIdleWorks) return sys;
-    return document.hasFocus() ? appIdle : sys; // auto: dopóki system nie potwierdzi, że raportuje
+    // JustMusic ≥ 1.2.1 mówi wprost, czy pomiar systemowy działa (np. Wayland przez ext-idle-notify)
+    if (c.source === 'system' || reliable || systemIdleWorks) return sys;
+    return document.hasFocus() ? appIdle : sys; // starsze wersje: dopóki system nie potwierdzi, że raportuje
   }
 
   function enterAfk(isManual = false) {

@@ -274,11 +274,22 @@ function unregisterAllGlobals() {
 }
 
 // ---------------- bezczynność ----------------
+// Czas bezczynności całego systemu.
+// Wayland: Electron zwraca zawsze 0 – używamy protokołu ext-idle-notify (wlidle.js).
+// X11, Windows, macOS: powerMonitor działa poprawnie.
+const wlidle = require('./wlidle');
 function idleSeconds() {
+  if (wlidle.supported()) {
+    wlidle.start();
+    const s = wlidle.idleSeconds();
+    if (s !== null) return { seconds: s, state: s > 0 ? 'idle' : 'active', source: 'wayland', reliable: true };
+    // kompozytor bez ext-idle-notify (np. starsze środowiska) – wynik niewiarygodny
+    return { seconds: 0, state: 'unknown', source: 'none', reliable: false };
+  }
   try {
-    return { seconds: powerMonitor.getSystemIdleTime(), state: powerMonitor.getSystemIdleState(60) };
+    return { seconds: powerMonitor.getSystemIdleTime(), state: powerMonitor.getSystemIdleState(60), source: 'system', reliable: true };
   } catch {
-    return { seconds: 0, state: 'unknown' };
+    return { seconds: 0, state: 'unknown', source: 'none', reliable: false };
   }
 }
 
