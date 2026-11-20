@@ -23,7 +23,7 @@ export const DEFAULT_SETTINGS = {
   library: { folders: [], scanOnStart: true },
   plugins: { enabled: {}, data: {}, catalogUrl: '' },
   system: { tray: true, closeToTray: false, taskbarProgress: true },
-  updates: { autoCheck: true, autoDownload: false },
+  updates: { autoCheck: true, autoInstall: true },
 };
 
 export const DEFAULT_DATA = {

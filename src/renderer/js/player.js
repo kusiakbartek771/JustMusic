@@ -498,7 +498,8 @@ function shuffleArr(a) {
 let lastSessionSave = 0;
 export function saveSession() {
   lastSessionSave = performance.now();
-  S.data.session = { queue: P.queue.slice(-1000), index: P.index, time: audio.currentTime || 0, context: P.context };
+  const resumeAfterUpdate = S.data.session?.resumeAfterUpdate; // nie gub znacznika przy zamykaniu
+  S.data.session = { queue: P.queue.slice(-1000), index: P.index, time: audio.currentTime || 0, context: P.context, ...(resumeAfterUpdate ? { resumeAfterUpdate } : {}) };
   saveData();
 }
 

@@ -444,7 +444,7 @@ app.whenReady().then(async () => {
   system.init({ windowGetter: () => win, onCommand: (cmd, arg) => send('player:cmd', { cmd, arg }) });
   discord.setEmitter((type, payload) => send('discord:event', { type, payload }));
   voicemon.setEmitter((type, payload) => send('voicemon:event', { type, payload }));
-  updater.init((st) => send('update:status', { ...st, current: app.getVersion() }));
+  updater.init((st) => send('update:status', { ...st, current: app.getVersion() }), () => appSettings);
   createWindow();
   if (appSettings.system?.tray !== false) system.setTray(true);
   yt.detect().catch(() => {});

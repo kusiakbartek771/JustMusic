@@ -6,6 +6,7 @@ const PKG = require('../../package.json');
 
 const REPO = (PKG.justmusic && PKG.justmusic.repo) || '';
 let send = () => {};
+let getSettings = () => ({});
 let autoUpdater = null;
 let state = { state: 'idle', version: null, percent: 0, notes: '', url: null, error: null, auto: false };
 
@@ -21,8 +22,12 @@ function set(patch) {
   send(state);
 }
 
-function init(sender) {
+// automatyczna instalacja (domyślnie włączona) – pobieranie w tle bez pytania
+const autoInstallEnabled = () => getSettings()?.updates?.autoInstall !== false;
+
+function init(sender, settingsGetter) {
   send = sender;
+  if (settingsGetter) getSettings = settingsGetter;
   state.auto = canAutoInstall();
   if (!state.auto) return;
   try {
@@ -34,7 +39,10 @@ function init(sender) {
   autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = true;
   autoUpdater.on('checking-for-update', () => set({ state: 'checking', error: null }));
-  autoUpdater.on('update-available', (i) => set({ state: 'available', version: i.version, notes: notesText(i.releaseNotes), url: releaseUrl(i.version) }));
+  autoUpdater.on('update-available', (i) => {
+    set({ state: 'available', version: i.version, notes: notesText(i.releaseNotes), url: releaseUrl(i.version) });
+    if (autoInstallEnabled()) download();
+  });
   autoUpdater.on('update-not-available', () => set({ state: 'none' }));
   autoUpdater.on('download-progress', (p) => set({ state: 'downloading', percent: Math.round(p.percent) }));
   autoUpdater.on('update-downloaded', (i) => set({ state: 'ready', version: i.version, percent: 100 }));
@@ -105,10 +113,11 @@ async function download() {
   return state;
 }
 
+// Instalacja i automatyczne uruchomienie nowej wersji (bez okien instalatora)
 function install() {
   if (autoUpdater && state.state === 'ready') {
     app.isQuitting = true;
-    setImmediate(() => autoUpdater.quitAndInstall(false, true));
+    setImmediate(() => autoUpdater.quitAndInstall(true, true));
   }
 }
 
