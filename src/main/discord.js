@@ -21,7 +21,23 @@ let lastActivity = null;
 let voice = { enabled: false, secret: '', channelId: null, subscribed: null, authed: false };
 let lastCloseReason = '';
 let foundSocket = false;
-let retryDelay = 3000;
+let retryDelay = 5000;
+let nextRetry = 0; // ms – za ile ponowimy łączenie (0 = nie ponawiamy)
+
+// Czy Discord był już kiedyś wykryty na tym komputerze? Jeśli tak – ponawiamy co 5 s, bo na pewno
+// wróci (np. po restarcie Discorda). Jeśli nigdy go nie było – rzadziej, żeby nie marnować zasobów.
+const SEEN_EVERY = 5000;
+let seen = null;
+const seenFile = () => path.join(app.getPath('userData'), 'discord-seen.json');
+function wasSeen() {
+  if (seen === null) { try { seen = JSON.parse(fs.readFileSync(seenFile(), 'utf8')).seen === true; } catch { seen = false; } }
+  return seen;
+}
+function markSeen() {
+  if (wasSeen()) return;
+  seen = true;
+  try { fs.writeFileSync(seenFile(), JSON.stringify({ seen: true, at: Date.now() })); } catch {}
+}
 
 function setEmitter(fn) {
   emit = fn;
@@ -91,7 +107,9 @@ async function doConnect(id) {
     if (foundSocket) throw new Error(lastCloseReason || 'Discord odrzucił połączenie');
     throw new Error('Nie znaleziono Discorda. Vesktop: Ustawienia → Vesktop → włącz „Rich Presence (arRPC)”');
   }
-  retryDelay = 3000;
+  retryDelay = 5000;
+  nextRetry = 0;
+  markSeen();
   if (lastActivity) setActivity(lastActivity).catch(() => {});
   if (voice.enabled) startVoice().catch((e) => emit('error', e.message));
   emit('status', status());
@@ -140,14 +158,17 @@ function attach(s, id) {
   });
 }
 
-// ponawianie: szybko na początku (Discord może dopiero startować), potem rzadziej
+// ponawianie: co 5 s, jeśli Discord był już kiedyś wykryty; inaczej od 5 s coraz rzadziej (do 60 s)
 function scheduleReconnect() {
   clearTimeout(reconnectTimer);
-  if (!clientId) return;
+  if (!clientId) { nextRetry = 0; return; }
+  const delay = wasSeen() ? SEEN_EVERY : retryDelay;
+  if (!wasSeen()) retryDelay = Math.min(retryDelay * 2, 60000);
+  nextRetry = delay;
   reconnectTimer = setTimeout(() => {
     if (!sock && clientId) connect(clientId).catch((e) => emit('error', e.message));
-  }, retryDelay);
-  retryDelay = Math.min(retryDelay * 2, 30000);
+  }, delay);
+  emit('status', status());
 }
 
 function onMessage(op, msg) {
@@ -197,14 +218,15 @@ function clearActivity() {
 function disconnect(forget = true) {
   dbg('disconnect', forget);
   clearTimeout(reconnectTimer);
-  if (forget) { clientId = null; lastActivity = null; }
+  nextRetry = 0;
+  if (forget) { clientId = null; lastActivity = null; retryDelay = 5000; }
   if (sock) { try { sock.destroy(); } catch {} }
   sock = null;
   ready = false;
 }
 
 function status() {
-  return { connected: ready, user: user ? { id: user.id, name: user.global_name || user.username } : null, voice: { enabled: voice.enabled, authed: voice.authed, channelId: voice.channelId } };
+  return { connected: ready, retryIn: ready ? 0 : nextRetry, seen: wasSeen(), user: user ? { id: user.id, name: user.global_name || user.username } : null, voice: { enabled: voice.enabled, authed: voice.authed, channelId: voice.channelId } };
 }
 
 // ---------------- głos: kto mówi ----------------

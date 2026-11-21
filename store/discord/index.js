@@ -18,6 +18,7 @@ export default function activate(api) {
 
   let status = { connected: false, user: null, voice: {} };
   let lastErr = '';
+  let autoTried = false; // pierwsza próba się nie udała – dalej łączy się samo
   let afk = !!api.bus.last('afk');
   let together = api.bus.last('together') || { active: false }; // plugin „Słuchajmy razem”
   const speaking = new Set();
@@ -35,6 +36,14 @@ export default function activate(api) {
   const threshold = (sens) => 0.003 + 0.04 * Math.pow(1 - sens / 100, 1.6);
   let releaseTimer = null;
   let refreshSettings = () => {};
+
+  // „Czekam na Discorda…” zamiast błędu, gdy aplikacja i tak sama ponawia łączenie
+  const offlineText = () => {
+    const sec = Math.round((status.retryIn || 0) / 1000);
+    if (sec && status.seen) return `Czekam na Discorda – łączę automatycznie co ${sec} s`;
+    if (sec) return `${lastErr || 'Nie znaleziono Discorda'} · ponowię za ${sec} s`;
+    return lastErr || 'Nie połączono';
+  };
 
   const pad = (s, fallback) => {
     s = String(s || '').trim();
@@ -108,6 +117,7 @@ export default function activate(api) {
       if (c.duck && c.secret && duckMethod() === 'rpc') api.discord.voice({ enabled: true, secret: c.secret, interactive: false }).catch((e) => { lastErr = e.message === 'AUTH_REQUIRED' ? 'Kliknij „Połącz konto”, aby włączyć przyciszanie' : e.message; refreshSettings(); });
     } catch (e) {
       lastErr = e.message;
+      autoTried = true;
       if (!silent) api.ui.toast('Discord: ' + e.message, { error: true });
     }
     refreshSettings();
@@ -122,7 +132,7 @@ export default function activate(api) {
   }
 
   api.discord.on(({ type, payload }) => {
-    if (type === 'status') { status = payload; refreshSettings(); if (payload.connected) push(true); }
+    if (type === 'status') { const was = status.connected; status = payload; if (payload.connected) lastErr = ''; refreshSettings(); paintBtn(); if (payload.connected) { push(true); if (!was && autoTried) api.ui.toast('Połączono z Discordem ✓'); } }
     else if (type === 'error') { lastErr = payload; refreshSettings(); }
     else if (type === 'speaking') {
       if (payload.self && !cfg().duckSelf) return;
@@ -156,7 +166,7 @@ export default function activate(api) {
       };
       const st = status.connected
         ? `<span class="status-dot ok"></span>Połączono${status.user ? ` jako <b>${esc(status.user.name)}</b>` : ''}`
-        : `<span class="status-dot"></span>${esc(lastErr || 'Nie połączono')}`;
+        : `<span class="status-dot"></span>${esc(offlineText())}`;
       el.replaceChildren(
         api.ui.settingRow('Status', st,
           api.ui.button(status.connected ? 'Rozłącz' : 'Połącz', { cls: 'sm', onClick: async () => {
@@ -289,7 +299,7 @@ export default function activate(api) {
           h('div.dc-txt', { html: `<small>Słucha JustMusic</small><b>${esc(c.mode === 'private' ? 'Słucha muzyki' : t.title)}</b><span>${esc(c.mode === 'private' ? 'w JustMusic' : t.artist || '')}</span>` }));
       const head = h('div.dc-head', null,
         h('div.dc-ic', { html: api.icon('discord') }),
-        h('div.dc-who', { html: `<b>Discord</b><small>${status.connected ? `<span class="status-dot ok"></span>${esc(status.user?.name || 'Połączono')}` : `<span class="status-dot"></span>${esc(lastErr || 'Nie połączono')}`}</small>` }),
+        h('div.dc-who', { html: `<b>Discord</b><small>${status.connected ? `<span class="status-dot ok"></span>${esc(status.user?.name || 'Połączono')}` : `<span class="status-dot"></span>${esc(offlineText())}`}</small>` }),
         status.connected ? null : api.ui.button('Połącz', { cls: 'sm', onClick: async () => { await connect(); draw(); } }));
       const modes = h('div.dc-modes');
       for (const [k, label, hint] of MODES) {
