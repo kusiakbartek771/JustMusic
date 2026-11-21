@@ -255,21 +255,31 @@ function progress(ratio, mode) {
 
 // ---------------- globalne skróty ----------------
 const globals = new Map(); // accelerator -> id
-function registerGlobal(accelerator, id) {
+// KDE: bezpośrednio przez kglobalaccel (portal XDG gubi część klawiszy); reszta: Electron.
+const kdeKeys = require('./kdeshortcuts');
+async function registerGlobal(accelerator, id) {
   try {
+    if (kdeKeys.available()) {
+      const ok = await kdeKeys.register(accelerator, id, () => sendCmd('shortcut', globals.get(accelerator) || id));
+      if (ok) globals.set(accelerator, id);
+      return ok;
+    }
     if (globals.has(accelerator)) globalShortcut.unregister(accelerator);
     const ok = globalShortcut.register(accelerator, () => sendCmd('shortcut', id));
     if (ok) globals.set(accelerator, id);
     return ok;
-  } catch {
+  } catch (e) {
+    console.warn('[shortcut]', accelerator, e.message);
     return false;
   }
 }
 function unregisterGlobal(accelerator) {
-  try { globalShortcut.unregister(accelerator); } catch {}
+  if (kdeKeys.available()) kdeKeys.unregister(accelerator);
+  else try { globalShortcut.unregister(accelerator); } catch {}
   globals.delete(accelerator);
 }
 function unregisterAllGlobals() {
+  if (kdeKeys.available()) { kdeKeys.unregisterAll(); globals.clear(); return; }
   for (const a of globals.keys()) unregisterGlobal(a);
 }
 
