@@ -14,6 +14,7 @@ const system = require('./system');
 const discord = require('./discord');
 const updater = require('./updater');
 const voicemon = require('./voicemonitor');
+const widgets = require('./widgets');
 const ffmpegInst = require('./ffmpeg');
 const PKG = require('../../package.json');
 
@@ -249,7 +250,9 @@ function createWindow() {
   };
   win.on('close', saveBounds);
   win.on('hide', saveBounds);
-  win.on('closed', () => (win = null));
+  win.on('closed', () => { win = null; widgets.closeAll(); });
+  // przeładowanie interfejsu = pluginy startują od nowa, stare widżety byłyby osierocone
+  win.webContents.on('did-start-navigation', (d) => { if (d.isMainFrame && !d.isSameDocument) widgets.closeAll(); });
 }
 
 function send(channel, payload) {
@@ -468,6 +471,14 @@ function setupIpc() {
   });
 
   handle('win:overlay', () => {});
+
+  // widżety na pulpicie (pluginy)
+  handle('widgets:caps', () => widgets.caps());
+  handle('widgets:open', (pluginId, wid, opts) => widgets.open(pluginId, wid, opts));
+  handle('widgets:update', (key, opts) => widgets.update(key, opts));
+  handle('widgets:post', (key, msg) => widgets.post(key, msg));
+  handle('widgets:close', (key) => widgets.close(key));
+  handle('widgets:closeAll', (pluginId) => widgets.closeAll(pluginId));
   handle('app:relaunch', () => {
     app.relaunch();
     app.exit(0);
@@ -483,6 +494,7 @@ app.whenReady().then(async () => {
   system.init({ windowGetter: () => win, onCommand: (cmd, arg) => send('player:cmd', { cmd, arg }) });
   discord.setEmitter((type, payload) => send('discord:event', { type, payload }));
   voicemon.setEmitter((type, payload) => send('voicemon:event', { type, payload }));
+  widgets.init((ev) => send('widgets:event', ev), () => system.toggleWindow(true));
   updater.init((st) => send('update:status', { ...st, current: app.getVersion() }), () => appSettings);
   createWindow();
   if (appSettings.system?.tray !== false) system.setTray(true);
@@ -502,6 +514,7 @@ app.on('will-quit', () => {
   system.unregisterAllGlobals();
   discord.disconnect(true);
   voicemon.stop();
+  widgets.closeAll();
 });
 
 app.on('window-all-closed', () => {

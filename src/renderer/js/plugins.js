@@ -199,6 +199,31 @@ function makeApi(p, disposers) {
       get: (k, def) => (k in data() ? data()[k] : def),
       set: (k, v) => { data()[k] = v; saveSettings(); },
     },
+    /** Widżety na pulpicie: przezroczyste okna bez ramki, zawsze na wierzchu (treść = strona HTML pluginu) */
+    widgets: {
+      caps: () => window.jm.widgets.caps(),
+      async open(wid, opts = {}) {
+        const key = await window.jm.widgets.open(p.id, wid, opts);
+        const fns = new Set();
+        const off = window.jm.widgets.onEvent((ev) => {
+          if (ev.key !== key) return;
+          for (const fn of fns) { try { fn(ev); } catch (e) { console.error(e); } }
+        });
+        let closed = false;
+        const close = () => { if (closed) return; closed = true; off(); window.jm.widgets.close(key).catch(() => {}); };
+        track(close);
+        return {
+          key,
+          post: (msg) => (closed ? Promise.resolve() : window.jm.widgets.post(key, msg)),
+          update: (o) => (closed ? Promise.resolve(false) : window.jm.widgets.update(key, o)),
+          /** zdarzenia: { type: 'message', msg } | { type: 'moved', x, y } | { type: 'closed' } */
+          on: (fn) => { fns.add(fn); return () => fns.delete(fn); },
+          close,
+          get closed() { return closed; },
+        };
+      },
+      closeAll: () => window.jm.widgets.closeAll(p.id),
+    },
     http: {
       text: (url) => window.jm.http.get(url, 'text'),
       json: (url) => window.jm.http.get(url, 'json'),
@@ -239,6 +264,7 @@ function deactivate(id) {
   }
   plugins.active.delete(id);
   player.setDuck(id, 1, 0);
+  window.jm.widgets?.closeAll(id).catch(() => {});
 }
 
 export async function loadPlugins() {

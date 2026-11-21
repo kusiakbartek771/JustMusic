@@ -113,6 +113,16 @@ export default function activate(api) {
 - `addStyle(css)`, `toast(msg, opts)`, `modal(content)`, `prompt({...})`, `confirm({...})`, `popover(anchor, content)`, `contextMenu(event, items)`
 - pomocnicze: `api.h(tag, props, ...children)`, `api.icon(name)`, `api.esc(str)`, `api.fmtTime(sec)`
 
+### `api.widgets` (JustMusic 1.4.0+)
+Widżety na pulpicie: przezroczyste okna bez ramki, zawsze na wierzchu, na wszystkich pulpitach.
+Treść to strona HTML z folderu pluginu; rozmawia z pluginem przez `window.jmw`
+(`onMessage(fn)`, `post(msg)`, `resize(w, h)`, `focusApp()`).
+- `caps()` → `{ onTop, position, backend, displays }` – co potrafi system (np. GNOME/Wayland nie pozwala na „zawsze na wierzchu”)
+- `open(id, { page, width, height, anchor, marginX, marginY, display, x, y, onTop, allDesktops, clickThrough, opacity, visible })` → uchwyt
+  `{ post(msg), update(opts), on(fn), close() }`; zdarzenia: `{ type: 'message', msg }`, `{ type: 'moved', x, y }`, `{ type: 'closed' }`
+- `anchor`: `top-left`, `top-center`, `top-right`, `center-left`, `center`, `center-right`, `bottom-left`, `bottom-center`, `bottom-right` albo `free` (wtedy `x`, `y`)
+- przeciąganie: CSS `-webkit-app-region: drag` (przyciski: `no-drag`)
+
 ### `api.storage`
 - `get(key, default)`, `set(key, value)` – trwałe dane pluginu (zapisywane w ustawieniach)
 

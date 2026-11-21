@@ -117,6 +117,15 @@ contextBridge.exposeInMainWorld('jm', {
     external: (url) => call('shell:external', url),
   },
   win: { overlay: (c) => call('win:overlay', c) },
+  widgets: {
+    caps: () => call('widgets:caps'),
+    open: (pluginId, wid, opts) => call('widgets:open', pluginId, wid, opts),
+    update: (key, opts) => call('widgets:update', key, opts),
+    post: (key, msg) => call('widgets:post', key, msg),
+    close: (key) => call('widgets:close', key),
+    closeAll: (pluginId) => call('widgets:closeAll', pluginId),
+    onEvent: listen('widgets:event'),
+  },
   pathOf: (file) => {
     try {
       return webUtils.getPathForFile(file);

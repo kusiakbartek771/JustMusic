@@ -1,0 +1,156 @@
+* { box-sizing: border-box; }
+html, body { margin: 0; background: transparent !important; overflow: hidden; }
+body { display: inline-block; font-family: var(--font); color: var(--text); user-select: none; -webkit-font-smoothing: antialiased; }
+button { font: inherit; color: inherit; }
+
+.w {
+  position: relative;
+  width: var(--width);
+  display: grid;
+  gap: 0 0.9rem;
+  padding: 0.85rem;
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--bg) var(--bga), transparent);
+  overflow: hidden;
+  isolation: isolate;
+}
+.w.drag { -webkit-app-region: drag; }
+.w.drag button, .w.drag .bar, .w.drag .cover { -webkit-app-region: no-drag; }
+.w.border { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text) 12%, transparent); }
+.w.shadow { box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.25); }
+.w.shadow.border { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text) 12%, transparent), 0 8px 22px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.25); }
+.w.tshadow { text-shadow: 0 1px 3px rgba(0, 0, 0, 0.65), 0 0 1px rgba(0, 0, 0, 0.5); }
+.w.tshadow svg { filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6)); }
+
+/* rozmyta okładka jako tło */
+.bgimg { display: none; position: absolute; inset: -30px; z-index: -1; background: center / cover no-repeat; filter: blur(24px) saturate(1.4); opacity: 0.75; transform: scale(1.1); }
+.w.coverbg:not(.noimg) .bgimg { display: block; }
+.w.coverbg::after { content: ''; position: absolute; inset: 0; z-index: -1; background: color-mix(in srgb, var(--bg) 35%, transparent); }
+
+/* okładka */
+.cover { grid-area: cover; position: relative; width: 4.6rem; aspect-ratio: 1; border-radius: calc(var(--radius) * 0.55); overflow: hidden; background: color-mix(in srgb, var(--text) 10%, transparent); cursor: pointer; flex-shrink: 0; }
+.cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cover .ph { position: absolute; inset: 0; display: none; place-items: center; color: var(--dim); }
+.cover .ph svg { width: 42%; height: 42%; }
+.noimg .cover img { display: none; }
+.noimg .cover .ph { display: grid; }
+.shape-square .cover { border-radius: 2px; }
+.shape-circle .cover { border-radius: 50%; }
+.shape-vinyl .cover { border-radius: 50%; box-shadow: 0 0 0 0.25rem #111, 0 0 0 0.3rem color-mix(in srgb, var(--text) 25%, transparent); margin: 0.3rem; width: 4rem; }
+.shape-vinyl .cover::after { content: ''; position: absolute; inset: 42%; border-radius: 50%; background: #111; box-shadow: 0 0 0 2px color-mix(in srgb, var(--text) 30%, transparent); }
+.shape-vinyl .cover { animation: spin 6s linear infinite; animation-play-state: paused; }
+.shape-vinyl.playing .cover { animation-play-state: running; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* tekst */
+.info { grid-area: info; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 0.12rem; }
+.status { display: flex; align-items: center; gap: 0.4rem; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); font-weight: 700; }
+.title { font-size: 1.02rem; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bold .title { font-weight: 700; }
+.title span { display: inline-block; }
+.title.scroll { text-overflow: clip; mask-image: linear-gradient(90deg, transparent 0, #000 0.6rem, #000 calc(100% - 1rem), transparent); }
+.title.scroll span { animation: marquee var(--dur, 8s) ease-in-out infinite alternate; }
+@keyframes marquee { 0%, 15% { transform: translateX(0.5rem); } 85%, 100% { transform: translateX(var(--d)); } }
+.artist, .album, .next { font-size: 0.82rem; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.album { font-size: 0.75rem; opacity: 0.85; }
+.next { font-size: 0.72rem; opacity: 0.85; margin-top: 0.1rem; }
+.align-center .info { text-align: center; align-items: center; }
+.align-center .status { justify-content: center; }
+.align-right .info { text-align: right; align-items: flex-end; }
+
+/* słupki „gra” */
+.viz { display: inline-flex; align-items: flex-end; gap: 2px; height: 0.7rem; }
+.viz i { width: 3px; height: 30%; background: currentColor; border-radius: 1px; }
+.playing .viz i { animation: viz 0.9s ease-in-out infinite alternate; }
+.playing .viz i:nth-child(2) { animation-delay: -0.45s; animation-duration: 0.7s; }
+.playing .viz i:nth-child(3) { animation-delay: -0.2s; animation-duration: 1.1s; }
+@keyframes viz { from { height: 25%; } to { height: 100%; } }
+
+/* przyciski */
+.ctl { grid-area: ctl; display: flex; align-items: center; justify-content: center; gap: 0.15rem; }
+.ctl button { width: 2rem; height: 2rem; border: 0; border-radius: 50%; background: transparent; display: grid; place-items: center; cursor: pointer; opacity: 0.85; transition: transform 0.12s, opacity 0.12s, background 0.12s; padding: 0; }
+.ctl button:hover { opacity: 1; background: color-mix(in srgb, var(--text) 12%, transparent); }
+.ctl button:active { transform: scale(0.92); }
+.ctl svg { width: 1rem; height: 1rem; }
+.ctl .main { width: 2.4rem; height: 2.4rem; background: var(--accent); color: var(--accent-text); opacity: 1; }
+.ctl .main:hover { background: var(--accent); transform: scale(1.06); }
+.ctl .b-like.on { color: var(--accent); opacity: 1; }
+.ctl [hidden] { display: none; }
+.ctl-hover .ctl { opacity: 0; transition: opacity 0.18s; }
+.ctl-hover:hover .ctl { opacity: 1; }
+
+/* postęp */
+.prog { grid-area: prog; margin-top: 0.6rem; }
+.bar { height: 0.3rem; border-radius: 1rem; background: color-mix(in srgb, var(--text) 16%, transparent); overflow: hidden; cursor: pointer; position: relative; }
+.bar::before { content: ''; position: absolute; inset: -0.4rem 0; }
+.bar i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: inherit; transition: width 0.25s linear; }
+.times { display: flex; justify-content: space-between; font-size: 0.68rem; color: var(--dim); margin-top: 0.3rem; font-variant-numeric: tabular-nums; }
+
+/* ukrywanie elementów */
+.no-cover .cover, .no-status .status, .no-title .title, .no-artist .artist, .no-album .album, .no-next .next,
+.no-progress .bar, .no-time .times, .no-controls .ctl, .no-like .b-like, .no-viz .viz { display: none !important; }
+.no-progress.no-time .prog { display: none; }
+.no-progress .times { margin-top: 0; }
+.idle .prog, .idle .b-like, .idle .next, .idle .album { display: none !important; }
+.idle .b-prev, .idle .b-next { opacity: 0.4; }
+
+/* ===== układy ===== */
+/* Karta: okładka | tekst | przyciski, pod spodem postęp */
+.layout-card { grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "cover info ctl" "prog prog prog"; align-items: center; }
+.layout-card.no-cover { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "info ctl" "prog prog"; }
+.layout-card .ctl .b-prev { display: none; }
+.layout-card.no-like .ctl .b-prev { display: grid; }
+
+/* Pionowa: duża okładka, tekst i przyciski pod spodem */
+.layout-tall { grid-template-columns: minmax(0, 1fr); grid-template-areas: "cover" "info" "prog" "ctl"; gap: 0.7rem; text-align: center; width: min(var(--width), 18rem); }
+.layout-tall .cover { width: 100%; justify-self: center; }
+.layout-tall.shape-vinyl .cover { width: calc(100% - 0.6rem); }
+.layout-tall .info { align-items: center; text-align: center; }
+.layout-tall .status { justify-content: center; }
+.layout-tall .title { font-size: 1.15rem; max-width: 100%; }
+.layout-tall .prog { margin-top: 0; }
+.layout-tall .ctl { gap: 0.6rem; }
+
+/* Pasek: jedna linia, cienki postęp na dole */
+.layout-bar { grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "cover info ctl"; align-items: center; padding: 0.5rem 0.7rem; gap: 0 0.7rem; }
+.layout-bar.no-cover { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "info ctl"; }
+.layout-bar .cover { width: 2.6rem; }
+.layout-bar.shape-vinyl .cover { width: 2.2rem; }
+.layout-bar .info { flex-direction: row; align-items: baseline; gap: 0.45rem; white-space: nowrap; }
+.layout-bar .status, .layout-bar .album, .layout-bar .next { display: none !important; }
+.layout-bar .title { font-size: 0.92rem; flex: 0 1 auto; max-width: 68%; }
+.layout-bar .artist::before { content: '· '; }
+.layout-bar .artist { flex: 1 1 0; min-width: 2rem; }
+.layout-bar.no-title .artist::before { content: none; }
+.layout-bar .ctl button { width: 1.8rem; height: 1.8rem; }
+.layout-bar .ctl .main { width: 2rem; height: 2rem; }
+.layout-bar .ctl .b-like { display: none; }
+.layout-bar .prog { position: absolute; left: 0; right: 0; bottom: 0; margin: 0; }
+.layout-bar .bar { height: 3px; border-radius: 0; }
+.layout-bar .times { display: none; }
+
+/* Okładka: sama okładka, tekst na niej */
+.layout-cover { grid-template-columns: minmax(0, 1fr); grid-template-areas: "cover"; padding: 0; width: min(var(--width), 18rem); }
+.layout-cover .cover { width: 100%; border-radius: var(--radius); grid-area: 1 / 1; }
+.layout-cover.shape-circle .cover, .layout-cover.shape-vinyl .cover { border-radius: 50%; }
+.layout-cover.shape-vinyl .cover { width: calc(100% - 0.6rem); }
+.layout-cover .info, .layout-cover .prog, .layout-cover .ctl { grid-area: 1 / 1; z-index: 1; pointer-events: none; }
+.layout-cover .info { align-self: end; padding: 2.5rem 0.9rem 1.4rem; background: linear-gradient(transparent, rgba(0, 0, 0, 0.72)); color: #fff; border-radius: 0 0 var(--radius) var(--radius); }
+.layout-cover .artist, .layout-cover .album, .layout-cover .next { color: rgba(255, 255, 255, 0.8); }
+.layout-cover .prog { align-self: end; margin: 0 0.9rem 0.6rem; }
+.layout-cover .times { display: none; }
+.layout-cover .ctl { align-self: center; pointer-events: auto; opacity: 0; transition: opacity 0.18s; color: #fff; }
+.layout-cover:hover .ctl { opacity: 1; }
+.layout-cover .ctl button { background: rgba(0, 0, 0, 0.45); }
+.layout-cover .ctl .main { background: var(--accent); }
+.layout-cover .bar { pointer-events: auto; }
+.layout-cover.shape-circle .info, .layout-cover.shape-vinyl .info { display: none; }
+.layout-cover.shape-circle .prog, .layout-cover.shape-vinyl .prog { display: none; }
+
+/* Sam tekst: do nakładek, np. na stream */
+.layout-text { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "info ctl" "prog prog"; align-items: center; width: auto; min-width: 10rem; max-width: var(--width); padding: 0.6rem 0.9rem; }
+.layout-text .cover { display: none; }
+.layout-text .ctl .b-prev, .layout-text .ctl .b-like { display: none; }
+
+/* w podglądzie nic się nie przeciąga */
+.preview { -webkit-app-region: no-drag; }

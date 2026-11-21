@@ -172,6 +172,32 @@
         "index.js",
         "manifest.json"
       ]
+    },
+    {
+      "id": "whatisthatsong",
+      "name": "WhatIsThatSong?",
+      "version": "1.0.0",
+      "short": "Widżety na pulpicie z tym, co teraz gra – zawsze na wierzchu, z własnym wyglądem.",
+      "description": "Pokazuje aktualny utwór w małych widżetach na pulpicie, które są zawsze na ekranie (nad innymi oknami i na każdym pulpicie wirtualnym).\n• 5 układów: karta, pionowa, pasek, sama okładka, sam tekst\n• wybierasz, co widać: okładka, tytuł, wykonawca, album, postęp, czas, przyciski, serduszko, następny utwór\n• gotowe style (szkło, neon, retro, terminal…) albo własne kolory, czcionka, rozmiar, zaokrąglenie, cień, tło z okładki\n• położenie: róg lub krawędź ekranu z odstępem albo przeciągnięcie myszką\n• przepuszczanie kliknięć, ukrywanie podczas pauzy, kilka widżetów naraz\n• edytor z podglądem na żywo (menu „Widżety”)\nWymaga JustMusic 1.4.0 lub nowszego.",
+      "author": "JustMusic",
+      "main": "index.js",
+      "style": "style.css",
+      "icon": "monitor",
+      "minAppVersion": "1.4.0",
+      "tags": [
+        "widżet",
+        "pulpit",
+        "overlay"
+      ],
+      "files": [
+        "defaults.js",
+        "index.js",
+        "manifest.json",
+        "style.css",
+        "widget.css",
+        "widget.html",
+        "widget.js"
+      ]
     }
   ]
 }
