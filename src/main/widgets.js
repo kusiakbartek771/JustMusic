@@ -71,17 +71,40 @@ function applyFlags(item) {
   const top = opts.onTop !== false;
   win.setAlwaysOnTop(top, top ? (isMac ? 'floating' : 'screen-saver') : 'normal');
   try { win.setVisibleOnAllWorkspaces(opts.allDesktops !== false, { visibleOnFullScreen: true, skipTransformProcessType: true }); } catch {}
-  win.setIgnoreMouseEvents(!!opts.clickThrough, { forward: true });
   win.setOpacity(Math.min(1, Math.max(0.15, Number(opts.opacity ?? 1))));
-  const visible = opts.visible !== false;
-  if (!item.loaded) return;
-  if (!visible && win.isVisible()) win.hide();
-  else if (visible && !win.isVisible()) {
-    // na Waylandzie ponowne pokazanie to nowe okno dla kompozytora – trzeba je znów ustawić
-    if (useKwin()) kwin.forget(item.caption);
-    win.showInactive();
-    place(item);
+  setSoftHidden(item, opts.visible === false);
+}
+
+// Ukrywanie BEZ zamykania okna: zwijamy je do 1×1 px i przepuszczamy kliknięcia.
+// Prawdziwe hide()/show() tworzy dla kompozytora nowe okno, a nowe okno dostaje fokus –
+// gra na pełnym ekranie (np. Minecraft) traci go wtedy i sama się minimalizuje.
+function setSoftHidden(item, hide) {
+  const { win, opts } = item;
+  if (hide) {
+    win.setIgnoreMouseEvents(true, { forward: true });
+    if (!item.soft) {
+      item.soft = true;
+      const [w, h] = win.getSize();
+      if (!item.want) item.want = { w, h };
+      item.movedByUs = Date.now();
+      setWinSize(win, 1, 1);
+    }
+  } else {
+    win.setIgnoreMouseEvents(!!opts.clickThrough, { forward: true });
+    if (item.soft) {
+      item.soft = false;
+      item.movedByUs = Date.now();
+      if (item.want) setWinSize(win, item.want.w, item.want.h);
+      place(item);
+    }
   }
+}
+
+function setWinSize(win, w, h) {
+  win.setMinimumSize(1, 1);
+  win.setResizable(true);
+  win.setSize(w, h);
+  win.setResizable(false);
 }
 
 function validPage(page) {
@@ -105,6 +128,7 @@ function open(pluginId, wid, opts = {}) {
   const win = new BrowserWindow({
     width, height, x: pos.x, y: pos.y,
     show: false, frame: false, transparent: true, backgroundColor: '#00000000', hasShadow: false,
+    focusable: false, // widżet nie może zabierać fokusu (gry na pełnym ekranie się wtedy minimalizują)
     resizable: false, maximizable: false, minimizable: false, fullscreenable: false,
     skipTaskbar: true, title: caption, alwaysOnTop: opts.onTop !== false,
     ...(isMac ? { type: 'panel' } : {}),
@@ -122,7 +146,8 @@ function open(pluginId, wid, opts = {}) {
   applyFlags(item);
   if (useKwin()) kwin.set(caption, { above: opts.onTop !== false, allDesktops: opts.allDesktops !== false, pos });
   win.loadURL(`jm://app/plugins/${pluginId}/${page}?wid=${encodeURIComponent(wid)}`);
-  win.once('ready-to-show', () => { item.loaded = true; if (!win.isDestroyed() && item.opts.visible !== false) win.showInactive(); });
+  // okno pokazujemy od razu (ukryte = zwinięte do 1×1) i już go nie zamykamy – patrz setSoftHidden()
+  win.once('ready-to-show', () => { item.loaded = true; if (!win.isDestroyed()) win.showInactive(); });
 
   // przeciągnięcie przez użytkownika (Windows, macOS, X11) – na KDE/Wayland sprawdza to poll()
   const onMove = () => {
@@ -169,12 +194,12 @@ function resize(key, w, h) {
   if (!item || item.win.isDestroyed()) return;
   w = Math.max(40, Math.min(1600, Math.round(w)));
   h = Math.max(20, Math.min(1200, Math.round(h)));
+  item.want = { w, h };
+  if (item.soft) return; // zastosujemy przy pokazaniu
   const [cw, ch] = item.win.getSize();
   if (cw === w && ch === h) return;
   item.movedByUs = Date.now();
-  item.win.setResizable(true);
-  item.win.setSize(w, h);
-  item.win.setResizable(false);
+  setWinSize(item.win, w, h);
   if (item.opts.anchor !== 'free') place(item);
 }
 
@@ -201,7 +226,7 @@ function schedulePoll() {
   if (!useKwin() || !wins.size) return;
   pollTimer = setInterval(async () => {
     for (const [key, item] of wins) {
-      if (item.win.isDestroyed() || !item.win.isVisible()) continue;
+      if (item.win.isDestroyed() || !item.win.isVisible() || item.soft) continue;
       const g = await kwin.geometry(item.caption);
       if (!g || !item.last || kwin.pending(item.caption)) continue;
       if (Date.now() - item.movedByUs < 1500) { item.last = { x: g.x, y: g.y }; continue; }

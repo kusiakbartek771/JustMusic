@@ -74,6 +74,18 @@ function watch(w) {
 }
 workspace.windowList().forEach(watch);
 workspace.windowAdded.connect(watch);
+// widżet nigdy nie zatrzymuje fokusu – oddajemy go poprzedniemu oknu (np. grze na pełnym ekranie)
+var prev = workspace.activeWindow && !W[workspace.activeWindow.caption] ? workspace.activeWindow : null;
+workspace.windowActivated.connect(function (w) {
+  if (!w) return;
+  if (W[w.caption]) {
+    if (prev && prev !== w && !prev.deleted && !prev.minimized) {
+      try { workspace.activeWindow = prev; } catch (e) {}
+    }
+  } else {
+    prev = w;
+  }
+});
 `;
 }
 
