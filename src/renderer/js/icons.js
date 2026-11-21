@@ -79,6 +79,7 @@ const P = {
   discord: '<path d="M8.5 15.5c3 1.3 4 1.3 7 0"/><path d="M15.5 17.5 16.5 20c3-1 5-2.5 5.5-3 .5-5-1-9.5-3-12.5-1.5-.7-3-1.2-4.5-1.5l-.7 1.5a14 14 0 0 0-3.6 0L9.5 3c-1.5.3-3 .8-4.5 1.5-2 3-3.5 7.5-3 12.5.5.5 2.5 2 5.5 3l1-2.5"/><circle cx="9" cy="12" r="1.2" fill="currentColor"/><circle cx="15" cy="12" r="1.2" fill="currentColor"/>',
   command: '<path d="M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3"/>',
   zzz: '<path d="M4 4h6l-6 7h6"/><path d="M13 11h5l-5 6h5"/><path d="M19 3h3l-3 4h3"/>',
+  pip: '<rect x="2" y="4" width="20" height="16" rx="2"/><rect x="11" y="11" width="8" height="6" rx="1" fill="currentColor"/>',
   monitor: '<rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/>',
   power: '<path d="M12 2v10"/><path d="M18.4 6.6a9 9 0 1 1-12.77.04"/>',
   pin: '<path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/>',

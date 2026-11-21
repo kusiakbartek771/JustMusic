@@ -21,7 +21,8 @@ i pełna customizacja wyglądu. Działa na **Windows, Linux i macOS**. Wszystkie
 | 🔄 **Aktualizacje** | automatyczne sprawdzanie i instalacja nowych wersji z GitHuba |
 | 💬 **Feedback** | opinie i krótka ankieta wysyłane prosto do autora – bez zakładania konta |
 | 👋 **Ekran powitalny** | wygląd, układ, silnik (yt-dlp + ffmpeg jednym kliknięciem), foldery, pluginy i system przy pierwszym uruchomieniu |
-| 🎚️ **Dźwięk** | 10-pasmowy korektor z presetami, płynne wyciszanie, wznawianie sesji, wstępne ładowanie kolejnego utworu |
+| 🎚️ **Dźwięk** | 10-pasmowy korektor z presetami, wyrównywanie głośności utworów (pomiar LUFS przez ffmpeg), płynne przejścia (crossfade) i odtwarzanie bez przerw (gapless), płynne wyciszanie, wznawianie sesji |
+| 🪟 **Mini odtwarzacz** | małe okno z okładką i sterowaniem, zawsze na wierzchu (także KDE Wayland), pasek lub duża okładka, głośność kółkiem myszy |
 | ⚡ **Wydajność** | czysty JS bez frameworka, wirtualizowane listy (tysiące utworów bez spadków), leniwe ładowanie okładek, przyrostowe skanowanie biblioteki |
 | ⌨️ **Sterowanie** | skróty klawiszowe, klawisze multimedialne, integracja z systemem (MPRIS na Linuksie, SMTC na Windows, Centrum sterowania na macOS) |
 

@@ -53,7 +53,7 @@ async function geometry(caption) {
 
 function script() {
   const data = {};
-  for (const [cap, e] of entries) data[cap] = { above: !!e.above, all: e.allDesktops !== false, pos: e.pos || null };
+  for (const [cap, e] of entries) data[cap] = { above: !!e.above, all: e.allDesktops !== false, pos: e.pos || null, widget: !e.normal };
   return `// wygenerowane przez JustMusic – widżety na pulpicie
 const W = ${JSON.stringify(data)};
 function fix(w) {
@@ -62,7 +62,7 @@ function fix(w) {
   if (!c) return;
   w.keepAbove = c.above;
   w.onAllDesktops = c.all;
-  w.skipTaskbar = true; w.skipPager = true; w.skipSwitcher = true;
+  if (c.widget) { w.skipTaskbar = true; w.skipPager = true; w.skipSwitcher = true; }
   if (c.pos) {
     const g = w.frameGeometry;
     w.frameGeometry = { x: c.pos.x, y: c.pos.y, width: g.width, height: g.height };
@@ -78,7 +78,7 @@ workspace.windowAdded.connect(watch);
 var prev = workspace.activeWindow && !W[workspace.activeWindow.caption] ? workspace.activeWindow : null;
 workspace.windowActivated.connect(function (w) {
   if (!w) return;
-  if (W[w.caption]) {
+  if (W[w.caption] && W[w.caption].widget) {
     if (prev && prev !== w && !prev.deleted && !prev.minimized) {
       try { workspace.activeWindow = prev; } catch (e) {}
     }
@@ -126,10 +126,11 @@ function sync() {
   });
 }
 
-function set(caption, { above = true, allDesktops = true, pos } = {}) {
+// normal: zwykłe okno (np. mini odtwarzacz) – może mieć fokus, jest na pasku zadań i przetrwa clear()
+function set(caption, { above = true, allDesktops = true, pos, normal = false } = {}) {
   const prev = entries.get(caption) || {};
   if (pos) verifyTries = 0;
-  entries.set(caption, { above, allDesktops, pos: pos === undefined ? prev.pos || null : pos });
+  entries.set(caption, { above, allDesktops, normal, pos: pos === undefined ? prev.pos || null : pos });
   return sync();
 }
 
@@ -144,8 +145,8 @@ function forget(caption) {
 }
 
 function clear() {
-  entries.clear();
-  uuids.clear();
+  for (const [cap, e] of entries) if (!e.normal) { entries.delete(cap); uuids.delete(cap); }
+  if (entries.size) { sync(); return; }
   clearTimeout(syncTimer);
   call('/Scripting', 'org.kde.kwin.Scripting.unloadScript', PLUGIN).catch(() => {});
 }
@@ -153,4 +154,13 @@ function clear() {
 /** czy okno czeka jeszcze na ustawienie pozycji */
 const pending = (caption) => !!entries.get(caption)?.pos;
 
-module.exports = { available, set, remove, forget, clear, geometry, pending };
+/** przy zamykaniu aplikacji – usuń skrypt całkowicie */
+function shutdown() {
+  if (!entries.size) return;
+  entries.clear();
+  uuids.clear();
+  clearTimeout(syncTimer);
+  call('/Scripting', 'org.kde.kwin.Scripting.unloadScript', PLUGIN).catch(() => {});
+}
+
+module.exports = { available, set, remove, forget, clear, shutdown, geometry, pending };

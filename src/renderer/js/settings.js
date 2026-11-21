@@ -4,7 +4,7 @@ import { h, esc, btn, iconBtn, switchEl, select, rangeFill, toast, confirmDialog
 import { icon } from './icons.js';
 import { registerView, navigate, refresh } from './router.js';
 import { PRESETS, ACCENTS, FONTS, VAR_KEYS, themeVars, applyAll, applyLayout, applyTheme, applyStyle, updateDynamicAccent, setAmbient } from './theme.js';
-import { P } from './player.js';
+import { P, applyNormalize, lufsOf, loudnessAvailable } from './player.js';
 import { eqPanel } from './playerbar.js';
 import { plugins, setPluginEnabled, reloadPlugins, storeCatalog, installPlugin, uninstallPlugin } from './plugins.js';
 import { flush } from './state.js';
@@ -248,6 +248,14 @@ const SECTIONS = {
     const pb = S.settings.playback;
     body.append(h('h2', { text: 'Odtwarzanie' }), h('p', { text: 'Dźwięk, korektor i zachowanie odtwarzacza.' }));
     body.append(group('Korektor (EQ)', h('div.setting', null, eqPanel())));
+    const measured = Object.values(S.data.lufs || {}).filter((v) => typeof v === 'number').length;
+    const cur = P.current ? lufsOf(P.current) : null;
+    body.append(group('Głośność i przejścia',
+      toggleRow('Wyrównuj głośność utworów', `Głośne utwory są ściszane, a ciche podbijane, więc nie trzeba co chwilę ruszać suwakiem. Głośność mierzy ffmpeg w tle (zapamiętane: ${measured})${cur !== null ? ` · bieżący utwór: ${cur} LUFS` : ''}.${loudnessAvailable() ? '' : ' <b>Brak ffmpeg – zainstaluj go w zakładce Pobieranie.</b>'}`, pb, 'normalize', applyNormalize),
+      selectRow('Docelowa głośność', 'Im ciszej, tym więcej utworów jest wyrównywanych.', pb, 'normTarget', [[-11, 'Głośno (−11 LUFS)'], [-14, 'Standard (−14 LUFS, jak Spotify)'], [-18, 'Cicho (−18 LUFS)']], applyNormalize),
+      rangeRow('Płynne przejścia (crossfade)', 'Koniec utworu przenika się z początkiem następnego. 0 = wyłączone.', pb, 'crossfade', 0, 12, 1, ' s'),
+      toggleRow('Bez przerw między utworami (gapless)', 'Następny utwór jest wczytywany zawczasu i startuje od razu – albumy grają bez ciszy.', pb, 'gapless'),
+    ));
     body.append(group('Zachowanie',
       rangeRow('Płynne wyciszanie (pauza/wznowienie)', null, pb, 'fadeMs', 0, 1000, 50, ' ms'),
       rangeRow('Krok przewijania (Shift+←/→)', null, pb, 'seekStep', 5, 30, 5, ' s'),

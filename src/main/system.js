@@ -184,6 +184,7 @@ function trayMenu() {
     { label: 'Poprzedni', enabled: now.hasTrack, click: () => sendCmd('prev') },
     { type: 'separator' },
     { label: visible ? 'Ukryj okno' : 'Pokaż okno', click: () => toggleWindow() },
+    { label: 'Mini odtwarzacz', click: () => require('./mini').toggle() },
     { label: 'Zakończ JustMusic', click: () => { app.isQuitting = true; app.quit(); } },
   ]);
 }

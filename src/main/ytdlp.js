@@ -514,4 +514,54 @@ async function cacheClear() {
   return cacheInfo();
 }
 
-module.exports = { setConfig, detect, status, install, search, fromUrl, stream, proxyStream, resolve, download, cancel, cache, cacheInfo, cacheClear, sanitize };
+// --- pomiar głośności (EBU R128, LUFS) – do wyrównywania głośności utworów ---------------
+// Plik lokalny/pobrany czytamy bezpośrednio, strumień YouTube pobieramy kawałkami (jak yt-dlp,
+// bez dławienia) i podajemy ffmpeg na stdin. Wynik: zintegrowana głośność w LUFS albo null.
+async function loudness({ file, ytId }) {
+  if (!ffmpeg) await detect();
+  if (!ffmpeg) throw new Error('FFMPEG_MISSING');
+  const args = ['-hide_banner', '-nostats', '-t', '900', '-i', file || 'pipe:0', '-vn', '-af', 'ebur128', '-f', 'null', '-'];
+  const p = spawn(ffmpeg, args, { windowsHide: true, stdio: [file ? 'ignore' : 'pipe', 'ignore', 'pipe'] });
+  let err = '';
+  p.stderr.on('data', (d) => { err += d; if (err.length > 200000) err = err.slice(-20000); });
+  const done = new Promise((resolve) => {
+    p.on('error', () => resolve(null));
+    p.on('close', () => {
+      const m = /Integrated loudness:\s*\n\s*I:\s*(-?[\d.]+)\s*LUFS/.exec(err);
+      const v = m ? Number(m[1]) : NaN;
+      resolve(Number.isFinite(v) && v > -70 ? v : null);
+    });
+  });
+  const kill = setTimeout(() => p.kill(), 180000);
+  if (!file) {
+    p.stdin.on('error', () => {});
+    try {
+      const info = await streamInfo(ytId);
+      const wait = info.availableAt - Date.now();
+      if (wait > 0) await new Promise((r) => setTimeout(r, Math.min(wait + 250, 15000)));
+      const headers = { ...info.headers };
+      delete headers['Accept-Encoding'];
+      const step = Math.min(info.chunk || 10485760, 10485760);
+      let pos = 0;
+      for (let i = 0; i < 40; i++) {
+        headers.Range = `bytes=${pos}-${pos + step - 1}`;
+        const res = await fetch(info.url, { headers, redirect: 'follow' });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const buf = Buffer.from(await res.arrayBuffer());
+        if (p.exitCode !== null || p.stdin.destroyed) break;
+        if (!p.stdin.write(buf)) await new Promise((r) => { p.stdin.once('drain', r); p.once('close', r); });
+        pos += buf.length;
+        const total = info.size || Number((res.headers.get('content-range') || '').split('/')[1]) || 0;
+        if (buf.length < step || (total && pos >= total)) break;
+      }
+    } catch (e) {
+      console.warn('[loudness]', ytId, e.message);
+    }
+    try { p.stdin.end(); } catch {}
+  }
+  const v = await done;
+  clearTimeout(kill);
+  return v;
+}
+
+module.exports = { loudness, setConfig, detect, status, install, search, fromUrl, stream, proxyStream, resolve, download, cancel, cache, cacheInfo, cacheClear, sanitize };

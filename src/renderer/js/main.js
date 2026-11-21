@@ -12,6 +12,7 @@ import { verifyDownloads } from './downloads.js';
 import { toast } from './ui.js';
 import { registerBuiltinCommands, shortcutState } from './commands.js';
 import { setupSystemIntegration } from './sysint.js';
+import { setupMiniPlayer } from './miniplayer.js';
 import { setupUpdates } from './updates.js';
 import { setupSurvey } from './survey.js';
 import { shouldOnboard, openOnboarding } from './onboarding.js';
@@ -33,6 +34,7 @@ async function boot() {
   setupShortcuts();
   await registerBuiltinCommands();
   setupSystemIntegration();
+  setupMiniPlayer();
   setupUpdates();
   setupSurvey();
   if (shouldOnboard()) setTimeout(openOnboarding, 300);

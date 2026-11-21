@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self' jm:; script-src 'self' jm:; style-src 'self' 'unsafe-inline' jm:; img-src * data: blob: jm:; font-src 'self' jm: data:" />
+  <title>JustMusic – mini odtwarzacz</title>
+  <link rel="stylesheet" href="css/mini.css" />
+</head>
+<body>
+  <div id="card">
+    <div id="bg"></div>
+    <div id="cover"><img alt="" /><span class="ph"></span></div>
+    <div id="main">
+      <div id="info">
+        <div id="title">Nic nie gra</div>
+        <div id="artist"></div>
+      </div>
+      <div id="prog"><span id="t0">0:00</span><div id="bar"><div id="fill"></div></div><span id="t1">0:00</span></div>
+      <div id="ctl">
+        <button id="like" class="sm" title="Polub"></button>
+        <button id="prev" title="Poprzedni"></button>
+        <button id="play" class="big" title="Odtwórz / pauza"></button>
+        <button id="next" title="Następny"></button>
+        <button id="vol" class="sm" title="Wycisz · kółko myszy: głośność"></button>
+      </div>
+    </div>
+    <div id="tools">
+      <button id="size" title="Duża okładka / pasek"></button>
+      <button id="pin" title="Zawsze na wierzchu"></button>
+      <button id="expand" title="Otwórz pełne okno"></button>
+      <button id="close" title="Zamknij mini odtwarzacz"></button>
+    </div>
+    <div id="volpop"><div id="volfill"></div></div>
+  </div>
+  <script type="module" src="js/mini-window.js"></script>
+</body>
+</html>

@@ -143,8 +143,9 @@ export function renderPlayer() {
     bassBtn.classList.toggle('on', b !== 0);
   };
   const queueBtn = iconBtn('queue', 'Kolejka (Q)', () => toggleQueue(), 'sm');
+  const miniBtn = iconBtn('pip', 'Mini odtwarzacz', () => window.jm.mini?.toggle(), 'sm');
   const pluginSlot = h('div', { style: { display: 'contents' } });
-  const right = h('div.right', null, pluginSlot, bmBtn, dlBtn, bassBtn, eqBtn, queueBtn, volBtn, h('div.vol', null, vol));
+  const right = h('div.right', null, pluginSlot, bmBtn, dlBtn, bassBtn, eqBtn, miniBtn, queueBtn, volBtn, h('div.vol', null, vol));
 
   el.replaceChildren(np, center, right);
 

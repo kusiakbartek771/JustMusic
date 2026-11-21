@@ -16,6 +16,7 @@ export const DEFAULT_SETTINGS = {
     volume: 0.8, muted: false, shuffle: false, repeat: 'off', resume: true, prefetch: true,
     eq: { enabled: false, preset: 'flat', gains: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], preamp: 0 },
     seekStep: 10, fadeMs: 250, bass: 0,
+    normalize: true, normTarget: -14, crossfade: 0, gapless: true,
   },
   downloads: { dir: '', format: 'm4a', tag: true, concurrent: 2 },
   youtube: { searchMode: 'youtube', results: 25, cookiesBrowser: '', extraArgs: '', ytdlpPath: '', ffmpegPath: '', jsRuntime: true },
@@ -36,6 +37,7 @@ export const DEFAULT_DATA = {
   searches: [],      // ostatnie zapytania
   downloads: {},     // trackId -> ścieżka pliku
   spMap: {},         // spotifyId -> ytId
+  lufs: {},          // trackId -> zmierzona głośność (LUFS) albo false
   session: null,     // { queue, index, time }
 };
 

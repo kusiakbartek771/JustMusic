@@ -15,6 +15,7 @@ const discord = require('./discord');
 const updater = require('./updater');
 const voicemon = require('./voicemonitor');
 const widgets = require('./widgets');
+const mini = require('./mini');
 const ffmpegInst = require('./ffmpeg');
 const PKG = require('../../package.json');
 
@@ -250,7 +251,7 @@ function createWindow() {
   };
   win.on('close', saveBounds);
   win.on('hide', saveBounds);
-  win.on('closed', () => { win = null; widgets.closeAll(); });
+  win.on('closed', () => { win = null; widgets.closeAll(); mini.close(); });
   // przeładowanie interfejsu = pluginy startują od nowa, stare widżety byłyby osierocone
   win.webContents.on('did-start-navigation', (d) => { if (d.isMainFrame && !d.isSameDocument) widgets.closeAll(); });
 }
@@ -314,6 +315,7 @@ function setupIpc() {
   handle('yt:stream', (id, fresh) => yt.stream(id, fresh));
   handle('yt:resolve', (t) => yt.resolve(t));
   handle('yt:cache', (id) => yt.cache(id));
+  handle('yt:loudness', (src) => yt.loudness(src || {}));
   handle('cache:info', () => yt.cacheInfo());
   handle('cache:clear', () => yt.cacheClear());
 
@@ -391,6 +393,11 @@ function setupIpc() {
   handle('win:state', () => (win ? { maximized: win.isMaximized(), fullscreen: win.isFullScreen(), focused: win.isFocused() } : {}));
 
   // ---- system ----
+  handle('mini:open', () => mini.open());
+  handle('mini:toggle', () => mini.toggle());
+  handle('mini:close', () => mini.close());
+  handle('mini:isOpen', () => mini.isOpen());
+  ipcMain.on('mini:state', (_e, s) => mini.state(s));
   handle('sys:nowPlaying', (info) => system.nowPlaying(info));
   handle('sys:progress', (ratio, mode) => system.progress(ratio, mode));
   handle('sys:shortcutStatus', () => system.shortcutStatus());
@@ -494,6 +501,7 @@ app.whenReady().then(async () => {
   system.init({ windowGetter: () => win, onCommand: (cmd, arg) => send('player:cmd', { cmd, arg }) });
   discord.setEmitter((type, payload) => send('discord:event', { type, payload }));
   voicemon.setEmitter((type, payload) => send('voicemon:event', { type, payload }));
+  mini.init({ send, mainWin: () => win, hasTray: () => system.hasTray(), onChange: (open) => send('mini:changed', open) });
   widgets.init((ev) => send('widgets:event', ev), () => system.toggleWindow(true));
   updater.init((st) => send('update:status', { ...st, current: app.getVersion() }), () => appSettings);
   createWindow();
@@ -515,6 +523,7 @@ app.on('will-quit', () => {
   discord.disconnect(true);
   voicemon.stop();
   widgets.closeAll();
+  if (require('./kwin').available()) require('./kwin').shutdown();
 });
 
 app.on('window-all-closed', () => {

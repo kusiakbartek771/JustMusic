@@ -33,6 +33,7 @@ contextBridge.exposeInMainWorld('jm', {
     stream: (id, fresh) => call('yt:stream', id, fresh),
     resolve: (t) => call('yt:resolve', t),
     cache: (id) => call('yt:cache', id),
+    loudness: (src) => call('yt:loudness', src),
   },
   cache: { info: () => call('cache:info'), clear: () => call('cache:clear') },
   spotify: { fetch: (url, creds) => call('sp:fetch', url, creds) },
@@ -71,6 +72,14 @@ contextBridge.exposeInMainWorld('jm', {
     close: () => call('win:close'),
     state: () => call('win:state'),
     onState: listen('win:state'),
+  },
+  mini: {
+    open: () => call('mini:open'),
+    toggle: () => call('mini:toggle'),
+    close: () => call('mini:close'),
+    isOpen: () => call('mini:isOpen'),
+    state: (st) => ipcRenderer.send('mini:state', st),
+    onChanged: listen('mini:changed'),
   },
   system: {
     nowPlaying: (info) => call('sys:nowPlaying', info),
