@@ -92,3 +92,37 @@ export function normalize(w, n = 1) {
     behavior: { ...d.behavior, ...(w?.behavior || {}) },
   };
 }
+
+// ---------- popupy ----------
+export const ANIMS = [['slide', 'Wysunięcie'], ['fade', 'Pojawienie się'], ['zoom', 'Powiększenie'], ['none', 'Bez animacji']];
+
+export function defaultPopup() {
+  const w = defaultWidget();
+  w.id = 'popup';
+  w.name = 'Popupy';
+  w.show = { ...w.show, album: false, next: false, time: false };
+  w.style = { ...w.style, width: 360 };
+  w.pos = { anchor: 'top-right', marginX: 24, marginY: 24, display: '', x: null, y: null };
+  w.behavior = { ...w.behavior, locked: true };
+  w.pop = {
+    track: true, trackDur: 5, // przy zmianie utworu
+    hotkey: true, accel: 'Control+Alt+W', hotkeyDur: 8, // po skrócie klawiszowym
+    osd: true, osdVolume: true, osdPause: true, osdSeek: true, osdDur: 1.6, // głośność / pauza / przewijanie
+    background: true, // tylko gdy JustMusic jest w tle
+    anim: 'slide',
+  };
+  return w;
+}
+
+export function normalizePopup(p) {
+  const d = defaultPopup();
+  return {
+    ...d,
+    layout: p?.layout || d.layout,
+    show: { ...d.show, ...(p?.show || {}) },
+    style: { ...d.style, ...(p?.style || {}) },
+    pos: { ...d.pos, ...(p?.pos || {}), anchor: p?.pos?.anchor && p.pos.anchor !== 'free' ? p.pos.anchor : d.pos.anchor },
+    behavior: { ...d.behavior, locked: true },
+    pop: { ...d.pop, ...(p?.pop || {}) },
+  };
+}

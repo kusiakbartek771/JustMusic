@@ -3,6 +3,8 @@
 import { FONTS, normalize } from './defaults.js';
 
 const preview = new URLSearchParams(location.search).has('preview');
+const isPopup = document.body.classList.contains('popup');
+if (preview) document.body.classList.add('preview');
 const chan = window.jmw && !preview
   ? { post: (m) => window.jmw.post(m), on: (fn) => window.jmw.onMessage(fn), resize: (w, h) => window.jmw.resize(w, h), focusApp: () => window.jmw.focusApp() }
   : {
@@ -20,6 +22,11 @@ const ICONS = {
   heart: '<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>',
   heartFill: '<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" fill="currentColor"/>',
   music: '<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>',
+  volume: '<path d="M11 5 6 9H2v6h4l5 4V5Z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>',
+  volumeLow: '<path d="M11 5 6 9H2v6h4l5 4V5Z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>',
+  mute: '<path d="M11 5 6 9H2v6h4l5 4V5Z"/><path d="m22 9-6 6"/><path d="m16 9 6 6"/>',
+  seek: '<path d="M13 19V5l9 7-9 7Z" fill="currentColor" stroke="none"/><path d="M3 19V5l9 7-9 7Z" fill="currentColor" stroke="none"/>',
+  back: '<path d="M11 19V5l-9 7 9 7Z" fill="currentColor" stroke="none"/><path d="M21 19V5l-9 7 9 7Z" fill="currentColor" stroke="none"/>',
 };
 const svg = (n) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[n]}</svg>`;
 
@@ -84,7 +91,7 @@ function applyConfig() {
   root.className = [
     'w', `layout-${cfg.layout}`, `align-${s.align}`, `shape-${s.coverShape}`, `ctl-${s.controls}`,
     s.shadow && 'shadow', s.border && 'border', s.textShadow && 'tshadow', s.bold && 'bold', s.coverBg && 'coverbg',
-    cfg.behavior.locked || preview ? 'locked' : 'drag', preview && 'preview',
+    cfg.behavior.locked || preview || isPopup ? 'locked' : 'drag', preview && 'preview',
     ...Object.entries(cfg.show).filter(([, v]) => !v).map(([k]) => `no-${k}`),
   ].filter(Boolean).join(' ');
   render();
@@ -123,6 +130,7 @@ function render() {
   }
   root.classList.toggle('noimg', !thumb || imgFailed);
   tick();
+  fit();
   requestAnimationFrame(() => { marquee(); fit(); });
 }
 
@@ -157,7 +165,8 @@ setInterval(() => { if (st.playing) tick(); }, 250);
 // ---------- rozmiar okna = rozmiar treści ----------
 let lastSize = '';
 function fit() {
-  const r = root.getBoundingClientRect();
+  const target = isPopup && document.body.dataset.kind === 'osd' ? osd.box : root;
+  const r = target.getBoundingClientRect();
   const pad = parseFloat(getComputedStyle(document.body).paddingLeft) || 0;
   const w = Math.ceil(r.width + pad * 2), h = Math.ceil(r.height + pad * 2);
   const k = `${w}x${h}`;
@@ -166,6 +175,60 @@ function fit() {
   chan.resize(w, h);
 }
 new ResizeObserver(() => fit()).observe(root);
+
+// ---------- popup (popup.html) ----------
+const osd = {
+  box: document.getElementById('osd'),
+  ic: document.querySelector('.osd-ic'), text: document.querySelector('.osd-text'),
+  sub: document.querySelector('.osd-sub'), fill: document.querySelector('.osd-bar i'),
+};
+let popTimer = null;
+let popDur = 5000;
+let popState = 'off'; // off | in | out
+function popShow(m) {
+  const b = document.body;
+  b.dataset.kind = m.kind === 'osd' ? 'osd' : 'track';
+  b.dataset.anim = m.anim || 'slide';
+  b.dataset.from = m.from || 'right';
+  if (m.kind === 'osd' && m.osd) {
+    osd.ic.innerHTML = svg(ICONS[m.osd.icon] ? m.osd.icon : 'music');
+    osd.text.textContent = m.osd.text || '';
+    osd.sub.textContent = m.osd.sub || '';
+    const hasBar = Number.isFinite(m.osd.value);
+    osd.box.classList.toggle('nobar', !hasBar);
+    if (hasBar) osd.fill.style.width = `${Math.max(0, Math.min(1, m.osd.value)) * 100}%`;
+  }
+  lastSize = '';
+  fit();
+  // ten sam rodzaj popupu, który już jest na ekranie – tylko odświeżamy treść i czas
+  if (popState !== 'in') {
+    b.classList.remove('in', 'out');
+    void b.offsetWidth;
+    b.classList.add('in');
+    popState = 'in';
+  }
+  popDur = Math.max(800, m.duration || 5000);
+  armTimer(popDur);
+}
+function armTimer(ms) {
+  clearTimeout(popTimer);
+  popTimer = setTimeout(popHide, ms);
+}
+function popHide() {
+  clearTimeout(popTimer);
+  if (popState !== 'in') return;
+  popState = 'out';
+  const b = document.body;
+  b.classList.remove('in');
+  b.classList.add('out');
+  setTimeout(() => { if (popState === 'out') { popState = 'off'; b.classList.remove('out'); chan.post({ cmd: 'popupDone' }); } }, b.dataset.anim === 'none' ? 0 : 230);
+}
+if (isPopup && !preview) {
+  // najechanie myszką zatrzymuje chowanie
+  document.body.addEventListener('mouseenter', () => { if (popState === 'in') clearTimeout(popTimer); });
+  document.body.addEventListener('mouseleave', () => { if (popState === 'in') armTimer(1500); });
+  osd.box.addEventListener('click', popHide);
+}
 
 // ---------- sterowanie ----------
 const cmd = (c, extra) => chan.post({ cmd: c, ...extra });
@@ -190,6 +253,10 @@ chan.on((m) => {
   } else if (m.t === 'state') {
     st = { ...st, ...m, at: Date.now() };
     render();
+  } else if (m.t === 'show' && isPopup) {
+    popShow(m);
+  } else if (m.t === 'hide' && isPopup) {
+    popHide();
   }
 });
 chan.post({ cmd: 'ready' });
