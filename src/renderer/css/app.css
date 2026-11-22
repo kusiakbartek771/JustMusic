@@ -809,3 +809,85 @@ kbd.k { font-family: inherit; font-size: 12px; background: var(--surface-2); bor
 .lang-opt.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, var(--surface-2)); font-weight: 600; }
 .lang-ico { font-size: 20px; line-height: 1; }
 .ob-lang { margin-top: 18px; display: flex; justify-content: center; }
+
+/* =====================================================================
+   Animacje (wyłącza je przełącznik „Animacje” i systemowe ograniczenie ruchu)
+   ===================================================================== */
+:root { --ease-out: cubic-bezier(.22, 1, .36, 1); --ease-spring: cubic-bezier(.34, 1.56, .64, 1); }
+
+/* przejście między widokami: nowy widok wjeżdża, przy „wstecz” z drugiej strony */
+@keyframes viewin { from { opacity: 0; transform: translateY(10px); } }
+@keyframes viewback { from { opacity: 0; transform: translateX(-14px); } }
+@keyframes risein { from { opacity: 0; transform: translateY(14px) scale(.985); } }
+#view.view-enter > *:not(.settings) { animation: viewin 280ms var(--ease-out) both; }
+#view.view-enter.view-back > *:not(.settings) { animation-name: viewback; }
+#view.view-enter .settings-body > * { animation: viewin 260ms var(--ease-out) both; }
+
+/* kafelki, karty i grupy ustawień wchodzą kaskadowo */
+#view.view-enter :is(.card, .quick, .group, .bm, .start-card) { animation: risein 380ms var(--ease-out) both; }
+#view.view-enter :is(.card, .quick, .group, .bm, .start-card):nth-child(2) { animation-delay: 35ms; }
+#view.view-enter :is(.card, .quick, .group, .bm, .start-card):nth-child(3) { animation-delay: 70ms; }
+#view.view-enter :is(.card, .quick, .group, .bm, .start-card):nth-child(4) { animation-delay: 105ms; }
+#view.view-enter :is(.card, .quick, .group, .bm, .start-card):nth-child(5) { animation-delay: 140ms; }
+#view.view-enter :is(.card, .quick, .group, .bm, .start-card):nth-child(6) { animation-delay: 175ms; }
+#view.view-enter :is(.card, .quick, .group, .bm, .start-card):nth-child(7) { animation-delay: 210ms; }
+#view.view-enter :is(.card, .quick, .group, .bm, .start-card):nth-child(8) { animation-delay: 245ms; }
+#view.view-enter :is(.card, .quick, .group, .bm, .start-card):nth-child(n+9) { animation-delay: 280ms; }
+
+/* karty unoszą się po najechaniu */
+.card { transition: background var(--speed), transform 220ms var(--ease-out), box-shadow 220ms var(--ease-out); }
+.card:hover { transform: translateY(-3px); box-shadow: 0 10px 26px rgb(0 0 0 / 0.28); }
+.card .cover { transition: transform 300ms var(--ease-out); }
+.card:hover .cover { transform: scale(1.025); }
+.quick { transition: background var(--speed), transform 200ms var(--ease-out); }
+.quick:hover { transform: translateX(2px); }
+.quick:active, .card:active { transform: scale(.98); }
+
+/* zmiana utworu w odtwarzaczu */
+@keyframes npcover { from { opacity: 0; transform: scale(.82) rotate(-4deg); } }
+@keyframes nptext { from { opacity: 0; transform: translateX(-10px); } }
+.np.np-change .cover { animation: npcover 420ms var(--ease-spring) both; }
+.np.np-change .txt { animation: nptext 360ms var(--ease-out) 60ms both; }
+
+/* przycisk odtwarzania: sprężyste naciśnięcie i „wskoczenie” ikony */
+.controls .main-play { transition: transform 220ms var(--ease-spring), box-shadow 220ms; }
+.controls .main-play:hover { box-shadow: 0 0 0 6px color-mix(in srgb, var(--text) 10%, transparent); }
+.controls .main-play:active { transform: scale(.9); }
+@keyframes iconswap { 0% { transform: scale(.4) rotate(-30deg); opacity: 0; } 100% { transform: none; opacity: 1; } }
+.main-play.icon-swap svg { animation: iconswap 260ms var(--ease-spring); }
+
+/* serduszko */
+@keyframes heartpop { 0% { transform: scale(1); } 30% { transform: scale(1.45); } 55% { transform: scale(.88); } 100% { transform: scale(1); } }
+@keyframes heartring { from { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent); } to { box-shadow: 0 0 0 12px transparent; } }
+.icon-btn.heart-pop svg { animation: heartpop 480ms var(--ease-out); }
+.icon-btn.heart-pop { animation: heartring 520ms ease-out; }
+
+/* przyciski: sprężyste kliknięcie */
+.icon-btn, .btn { transition: background var(--speed), color var(--speed), transform 180ms var(--ease-spring); }
+.icon-btn:active { transform: scale(.86); }
+.btn:active { transform: scale(.95); }
+
+/* pasek menu: wskaźnik aktywnej pozycji wyrasta */
+@keyframes navbar { from { transform: scaleY(0); } }
+.nav-item.on::before { animation: navbar 260ms var(--ease-spring); }
+.nav-item svg { transition: transform 200ms var(--ease-spring); }
+.nav-item:hover svg { transform: scale(1.12); }
+
+/* okładka-winyl kręci się, gdy muzyka gra (styl okładek: „Okrągłe (winyl)”) */
+[data-cover="round"] .np .cover.track-cover { animation: spin 9s linear infinite; animation-play-state: paused; }
+[data-cover="round"] body:not(.paused) .np .cover.track-cover { animation-play-state: running; }
+[data-cover="round"] .np.np-change .cover.track-cover { animation: npcover 420ms var(--ease-spring) both, spin 9s linear 420ms infinite; }
+
+/* menu i okna: odrobina sprężystości */
+@keyframes popspring { from { opacity: 0; transform: scale(.94) translateY(-6px); } }
+.menu, .popover { animation: popspring 180ms var(--ease-spring); }
+.modal { animation: popspring 240ms var(--ease-spring); }
+.toast { animation: toastin 320ms var(--ease-spring); }
+
+/* wybór języka */
+.lang-opt .lang-ico { transition: transform 260ms var(--ease-spring); }
+.lang-opt:hover .lang-ico { transform: scale(1.2) rotate(-8deg); }
+
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-animations="force"]) *, :root:not([data-animations="force"]) *::before, :root:not([data-animations="force"]) *::after { animation: none !important; transition: none !important; }
+}

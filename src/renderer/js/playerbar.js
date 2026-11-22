@@ -43,12 +43,28 @@ export function renderPlayer() {
     txt.append(title, artist);
     np.append(c, txt, likeBtn);
     drawLike();
+    // animacja zmiany utworu (tylko gdy to naprawdę inny utwór)
+    if (lastNpId && lastNpId !== t.id) {
+      np.classList.remove('np-change');
+      void np.offsetWidth;
+      np.classList.add('np-change');
+    }
+    lastNpId = t.id;
   };
+  let lastNpId = null;
   np.addEventListener('contextmenu', (e) => P.current && contextMenu(e, trackMenu([P.current])));
+  let wasLiked = null;
   const drawLike = () => {
-    const liked = P.current && isLiked(P.current.id);
+    const liked = !!(P.current && isLiked(P.current.id));
     likeBtn.innerHTML = icon(liked ? 'heartFill' : 'heart');
-    likeBtn.classList.toggle('on', !!liked);
+    likeBtn.classList.toggle('on', liked);
+    // „pyknięcie” serduszka przy polubieniu
+    if (liked && wasLiked === false) {
+      likeBtn.classList.remove('heart-pop');
+      void likeBtn.offsetWidth;
+      likeBtn.classList.add('heart-pop');
+    }
+    wasLiked = liked;
   };
 
   // --- środek: sterowanie + pasek postępu ---
@@ -149,9 +165,21 @@ export function renderPlayer() {
 
   el.replaceChildren(np, center, right);
 
+  let lastPlayIcon = null;
   const drawState = () => {
-    if (P.loading && P.current) playBtn.innerHTML = '<div class="loading-spin"></div>';
-    else playBtn.innerHTML = icon(P.playing ? 'pause' : 'play');
+    const kind = P.loading && P.current ? 'load' : P.playing ? 'pause' : 'play';
+    if (kind === lastPlayIcon) { document.body.classList.toggle('paused', !P.playing); return; }
+    if (kind === 'load') playBtn.innerHTML = '<div class="loading-spin"></div>';
+    else {
+      playBtn.innerHTML = icon(kind);
+      // ikona play/pauza „wskakuje” przy zmianie
+      if (lastPlayIcon && lastPlayIcon !== 'load') {
+        playBtn.classList.remove('icon-swap');
+        void playBtn.offsetWidth;
+        playBtn.classList.add('icon-swap');
+      }
+    }
+    lastPlayIcon = kind;
     document.body.classList.toggle('paused', !P.playing);
   };
   const drawModes = () => {

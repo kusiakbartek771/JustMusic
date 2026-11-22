@@ -102,7 +102,10 @@ async function install(id, remoteUrl) {
   const { items } = await catalog(remoteUrl);
   const p = items.find((x) => x.id === id);
   if (!p) throw new Error('Nie znaleziono pluginu w sklepie');
-  const target = path.join(userDir(), p.id);
+  // identyfikator ze zdalnego katalogu trafia do ścieżki – tylko bezpieczne znaki
+  const safeId = String(p.id || '');
+  if (!/^[a-z0-9_-]{1,64}$/i.test(safeId)) throw new Error('Nieprawidłowy identyfikator pluginu');
+  const target = path.join(userDir(), safeId);
   const tmp = target + '.installing';
   fs.rmSync(tmp, { recursive: true, force: true });
   fs.mkdirSync(tmp, { recursive: true });
@@ -116,7 +119,7 @@ async function install(id, remoteUrl) {
         fs.writeFileSync(path.join(tmp, rel), Buffer.from(await res.arrayBuffer()));
       }
     } else {
-      fs.cpSync(path.join(catalogDir, path.basename(id)), tmp, { recursive: true });
+      fs.cpSync(path.join(catalogDir, safeId), tmp, { recursive: true });
     }
     readManifest(tmp); // walidacja
     fs.rmSync(target, { recursive: true, force: true });

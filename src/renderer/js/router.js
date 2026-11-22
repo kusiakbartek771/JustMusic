@@ -20,7 +20,18 @@ function key(r) {
   return r.name + ':' + JSON.stringify(r.param ?? null);
 }
 
-function render(r) {
+// animacja wejścia widoku – tylko przy przejściu do innego widoku (nie przy odświeżeniu)
+let animTimer = null;
+function animateEnter(view, dir = 'fwd') {
+  view.classList.remove('view-enter', 'view-back');
+  void view.offsetWidth; // restart animacji
+  view.classList.add('view-enter');
+  if (dir === 'back') view.classList.add('view-back');
+  clearTimeout(animTimer);
+  animTimer = setTimeout(() => view.classList.remove('view-enter', 'view-back'), 900);
+}
+
+function render(r, anim = null) {
   const view = document.getElementById('view');
   if (current?.cleanup) {
     try { current.cleanup(); } catch (e) { console.error(e); }
@@ -39,6 +50,7 @@ function render(r) {
     view.textContent = 'Błąd widoku: ' + e.message;
   }
   current = { ...r, cleanup };
+  if (anim) animateEnter(view, anim);
   emit('route', route);
 }
 
@@ -48,7 +60,7 @@ export function navigate(name, param = null, { replace = false } = {}) {
   if (current && !replace) back.push({ name: current.name, param: current.param });
   if (back.length > 50) back.shift();
   fwd.length = 0;
-  render(r);
+  render(r, 'fwd');
 }
 
 export function refresh() {
@@ -63,7 +75,7 @@ export function goBack() {
   const r = back.pop();
   if (!r) return;
   fwd.push({ name: current.name, param: current.param });
-  render(r);
+  render(r, 'back');
   const s = scrollPos.get(key(r));
   if (s) requestAnimationFrame(() => (document.getElementById('view').scrollTop = s));
 }
@@ -72,7 +84,7 @@ export function goForward() {
   const r = fwd.pop();
   if (!r) return;
   back.push({ name: current.name, param: current.param });
-  render(r);
+  render(r, 'fwd');
 }
 
 export const canBack = () => back.length > 0;

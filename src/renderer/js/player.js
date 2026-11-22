@@ -327,7 +327,7 @@ async function load(track, { autoplay = true, startAt = 0 } = {}) {
 
 // ---------------- przejścia: crossfade / gapless ----------------
 // spare: następny utwór wczytywany zawczasu do zapasowego elementu
-const spare = { track: null, ready: false, kind: null, token: 0 };
+const spare = { track: null, ready: false, kind: null, token: 0, failedId: null };
 let transition = null; // { el (wyciszany), id }
 
 function stopEl(el) {
@@ -377,7 +377,8 @@ async function prepareSpare(track) {
   try {
     src = await sourceFor(track);
   } catch {
-    if (token === spare.token) spare.track = null;
+    // zapamiętaj porażkę – bez tego watchEnd ponawiałby próbę co pół sekundy
+    if (token === spare.token) { spare.track = null; spare.failedId = track.id; }
     return;
   }
   if (token !== spare.token) return;
@@ -387,7 +388,7 @@ async function prepareSpare(track) {
   spare.kind = src.kind;
   el.volume = 0;
   const ok = () => { if (token === spare.token) spare.ready = true; done(); };
-  const bad = () => { if (token === spare.token) { spare.track = null; spare.ready = false; elTrack.delete(el); } done(); };
+  const bad = () => { if (token === spare.token) { spare.track = null; spare.ready = false; spare.failedId = track.id; elTrack.delete(el); } done(); };
   const done = () => { el.removeEventListener('canplaythrough', ok); el.removeEventListener('error', bad); };
   el.addEventListener('canplaythrough', ok);
   el.addEventListener('error', bad);
@@ -454,7 +455,7 @@ function watchEnd() {
     const left = dur - audio.currentTime;
     const x = crossfadeSec();
     const n = S.settings.playback.repeat === 'one' ? null : peekNext();
-    if (n && left < x + 20 && spare.track?.id !== n.id) prepareSpare(n);
+    if (n && left < x + 20 && spare.track?.id !== n.id && spare.failedId !== n.id) prepareSpare(n);
     if (n && x > 0 && left <= x && spare.ready && spare.track?.id === n.id && dur > x * 3 && !transition) {
       startSpare(Math.max(0.5, left - 0.05));
     }

@@ -17,6 +17,8 @@ let prefixes = []; // [polski prefiks zakończony „:”, tłumaczenie]
 const cache = new Map();
 const ATTRS = ['title', 'placeholder', 'aria-label'];
 const LETTER = /[A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż]/;
+// treści użytkownika (tytuły, wykonawcy) – nigdy nie tłumaczymy, nawet gdy brzmią jak tekst interfejsu
+const SKIP = '[data-noi18n],[contenteditable],.t-title,.t-artist,.t-album,.np .t,.np .a,.q-now .t,.q-now .a';
 
 export const currentLang = () => lang;
 
@@ -106,14 +108,14 @@ function textNode(n) {
   const d = n.data;
   if (done.get(n) === d || !LETTER.test(d)) return;
   const p = n.parentNode;
-  if (!p || p.nodeName === 'SCRIPT' || p.nodeName === 'STYLE' || p.nodeName === 'TEXTAREA' || p.closest?.('[data-noi18n],[contenteditable]')) return;
+  if (!p || p.nodeName === 'SCRIPT' || p.nodeName === 'STYLE' || p.nodeName === 'TEXTAREA' || p.closest?.(SKIP)) return;
   const out = t(d);
   done.set(n, out);
   if (out !== d) n.data = out;
 }
 const attrDone = new WeakMap(); // element -> { attr: wartość po tłumaczeniu }
 function attrs(el) {
-  if (el.closest?.('[data-noi18n]')) return;
+  if (el.closest?.(SKIP)) return;
   let rec = attrDone.get(el);
   for (const a of ATTRS) {
     const v = el.getAttribute(a);

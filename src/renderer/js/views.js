@@ -108,7 +108,7 @@ registerView('home', (root) => {
       c.append(cover(t.thumb, 'track-cover'), h('div.title', { text: t.title }), h('div.sub', { text: t.artist || '' }), fab(() => player.playTracks(recent, i)));
       row.append(c);
     });
-    wrap.append(h('div.section', null, h('div.section-head', null, h('h2', { text: 'Ostatnio odtwarzane' })), row));
+    if (recent.length) wrap.append(h('div.section', null, h('div.section-head', null, h('h2', { text: 'Ostatnio odtwarzane' })), row));
   }
 
   // playlisty
