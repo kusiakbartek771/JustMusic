@@ -1,4 +1,4 @@
-// Plugin: Słuchajmy razem – wspólne słuchanie w czasie rzeczywistym.
+// Plugin: CanWeListenTogether – wspólne słuchanie w czasie rzeczywistym.
 // Gospodarz gra muzykę, goście słyszą to samo w tym samym momencie (każdy odtwarza u siebie,
 // synchronizowane są tylko tytuł, pozycja i pauza). Bez kont i bez własnego serwera.
 import { Room, BROKERS, newCode, normCode, randomId } from './room.js';
@@ -350,7 +350,7 @@ export default function activate(api) {
 
   function invite() {
     if (!S) return;
-    const text = `🎧 Posłuchaj ze mną w JustMusic!\nOtwórz „Słuchajmy razem” i wpisz kod: ${S.code}`;
+    const text = `🎧 Posłuchaj ze mną w JustMusic!\nOtwórz „CanWeListenTogether” i wpisz kod: ${S.code}`;
     navigator.clipboard.writeText(text).then(() => api.ui.toast('Skopiowano zaproszenie – wklej je znajomym')).catch(() => api.ui.toast('Kod: ' + S.code));
   }
 
@@ -370,14 +370,14 @@ export default function activate(api) {
   }
 
   // ---------- integracje ----------
-  const chip = api.ui.addTitlebarItem({ id: 'room', icon: 'user', text: 'Razem', title: 'Słuchajmy razem', onClick: () => api.ui.openView('room') });
+  const chip = api.ui.addTitlebarItem({ id: 'room', icon: 'user', text: 'Razem', title: 'CanWeListenTogether', onClick: () => api.ui.openView('room') });
   chip.show(false);
   function count() { return S ? (S.role === 'host' ? S.members.size + 1 : S.hs?.members?.length || 1) : 0; }
   function updateChip() {
     chip.show(!!S);
     if (!S) return;
     const label = S.role === 'guest' && !S.found ? 'Łączenie…' : S.detached ? 'Razem · po swojemu' : `Razem · ${count()}`;
-    chip.set({ text: label, title: `Słuchajmy razem – pokój ${S.code}` });
+    chip.set({ text: label, title: `CanWeListenTogether – pokój ${S.code}` });
   }
   let lastBus = '';
   function emitBus() {
@@ -389,16 +389,16 @@ export default function activate(api) {
     if (key !== lastBus) { lastBus = key; api.bus.emit('together', v); }
   }
 
-  api.commands.register({ id: 'create', label: 'Słuchajmy razem: utwórz pokój', run: () => host() });
-  api.commands.register({ id: 'join', label: 'Słuchajmy razem: dołącz do pokoju', run: async () => { const c = await api.ui.prompt({ title: 'Dołącz do pokoju', text: 'Wpisz kod od znajomego.', placeholder: 'ABCD-EFGH', ok: 'Dołącz' }); if (c) join(c); } });
-  api.commands.register({ id: 'invite', label: 'Słuchajmy razem: skopiuj zaproszenie', run: () => invite() });
-  api.commands.register({ id: 'leave', label: 'Słuchajmy razem: wyjdź z pokoju', run: () => leave(true) });
+  api.commands.register({ id: 'create', label: 'CanWeListenTogether: utwórz pokój', run: () => host() });
+  api.commands.register({ id: 'join', label: 'CanWeListenTogether: dołącz do pokoju', run: async () => { const c = await api.ui.prompt({ title: 'Dołącz do pokoju', text: 'Wpisz kod od znajomego.', placeholder: 'ABCD-EFGH', ok: 'Dołącz' }); if (c) join(c); } });
+  api.commands.register({ id: 'invite', label: 'CanWeListenTogether: skopiuj zaproszenie', run: () => invite() });
+  api.commands.register({ id: 'leave', label: 'CanWeListenTogether: wyjdź z pokoju', run: () => leave(true) });
 
   api.ui.addTrackMenuItem({
     label: 'Dodaj do wspólnego słuchania',
     icon: 'user',
     onClick: (tracks) => {
-      if (!S) { api.ui.toast('Najpierw utwórz pokój albo dołącz do znajomych (Słuchajmy razem)'); return; }
+      if (!S) { api.ui.toast('Najpierw utwórz pokój albo dołącz do znajomych (CanWeListenTogether)'); return; }
       if (S.role === 'host') { api.player.enqueue(tracks, false); api.ui.toast(tracks.length === 1 ? 'Dodano do kolejki' : `Dodano ${tracks.length} utworów`); return; }
       const ctl = S.hs?.ctl || {};
       if (!ctl.add && !ctl.control) { api.ui.toast('Gospodarz nie pozwala dodawać utworów'); return; }
@@ -412,14 +412,14 @@ export default function activate(api) {
   // ---------- widok ----------
   api.ui.addView({
     id: 'room',
-    title: 'Słuchajmy razem',
+    title: 'CanWeListenTogether',
     icon: 'user',
     render(el) {
       const root = h('div.view-pad.tg');
       el.append(root);
       const draw = () => {
         const focusCode = root.querySelector('.tg-code-in') === document.activeElement;
-        root.replaceChildren(h('h1.page-title', { text: 'Słuchajmy razem' }), ...(S ? roomView() : lobbyView()));
+        root.replaceChildren(h('h1.page-title', { text: 'CanWeListenTogether' }), ...(S ? roomView() : lobbyView()));
         if (focusCode) root.querySelector('.tg-code-in')?.focus();
       };
       redraws.add(draw);

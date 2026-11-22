@@ -848,15 +848,21 @@ function shuffleArr(a) {
 let lastSessionSave = 0;
 export function saveSession() {
   lastSessionSave = performance.now();
-  const resumeAfterUpdate = S.data.session?.resumeAfterUpdate; // nie gub znacznika przy zamykaniu
-  S.data.session = { queue: P.queue.slice(-1000), index: P.index, time: audio.currentTime || 0, context: P.context, ...(resumeAfterUpdate ? { resumeAfterUpdate } : {}) };
+  const { resumeAfterUpdate, resumeAfterReload } = S.data.session || {}; // nie gub znaczników przy zamykaniu
+  S.data.session = { queue: P.queue.slice(-1000), index: P.index, time: audio.currentTime || 0, context: P.context, ...(resumeAfterUpdate ? { resumeAfterUpdate } : {}), ...(resumeAfterReload ? { resumeAfterReload } : {}) };
   saveData();
 }
 
 export function restoreSession() {
   const s = S.data.session;
   audio.volume = volumeValue();
-  if (!s || !S.settings.playback.resume || !s.queue?.length) return;
+  const reload = s?.resumeAfterReload; // np. po zmianie języka
+  if (reload) {
+    delete s.resumeAfterReload;
+    saveData();
+    if (reload.playing) setTimeout(() => { if (P.current && !P.playing) toggle(); }, 300);
+  }
+  if (!s || !(S.settings.playback.resume || reload) || !s.queue?.length) return;
   const ids = s.queue.filter((id) => getTrack(id));
   if (!ids.length) return;
   P.queue = ids;

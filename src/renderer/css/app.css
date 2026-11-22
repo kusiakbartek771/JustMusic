@@ -796,3 +796,16 @@ kbd.k { font-family: inherit; font-size: 12px; background: var(--surface-2); bor
 .bass-row.compact { margin-top: 8px; padding-top: 10px; border-top: 1px solid var(--border); }
 .bass-row.compact .bass-val { font-weight: 400; color: var(--text-dim); }
 .bass-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* ---- wybór języka ---- */
+.lang-picker { display: flex; flex-wrap: wrap; gap: 8px; }
+.lang-opt {
+  display: flex; align-items: center; gap: 8px; padding: 7px 14px 7px 9px;
+  border-radius: 999px; border: 1px solid var(--border); background: var(--surface-2);
+  color: var(--text); cursor: pointer; font: inherit; font-size: 13px; transition: border-color .15s, background .15s, transform .1s;
+}
+.lang-opt:hover { border-color: color-mix(in srgb, var(--accent) 60%, var(--border)); }
+.lang-opt:active { transform: scale(.97); }
+.lang-opt.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, var(--surface-2)); font-weight: 600; }
+.lang-ico { font-size: 20px; line-height: 1; }
+.ob-lang { margin-top: 18px; display: flex; justify-content: center; }

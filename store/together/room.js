@@ -1,4 +1,4 @@
-// Pokój „Słuchajmy razem”: szyfrowana szyna wiadomości na publicznych brokerach MQTT.
+// Pokój „CanWeListenTogether”: szyfrowana szyna wiadomości na publicznych brokerach MQTT.
 // Kod pokoju jest jednocześnie kluczem – serwery widzą tylko losowy temat i zaszyfrowane bajty.
 // Łączymy się z kilkoma brokerami naraz (odporność na awarie), duplikaty są odrzucane.
 import { MqttConn } from './mqtt.js';

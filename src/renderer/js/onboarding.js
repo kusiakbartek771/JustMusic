@@ -1,6 +1,7 @@
 // Ekran powitalny – przy pierwszym uruchomieniu (i na życzenie z ustawień).
 // Kroki: powitanie → wygląd → układ → silnik muzyki → Twoja muzyka → pluginy → system.
 import { S, emit, saveSettings, flush } from './state.js';
+import { langPicker } from './langpicker.js';
 import { h, esc, btn, toast, switchEl, select } from './ui.js';
 import { icon } from './icons.js';
 import { PRESETS, ACCENTS, applyAll, applyLayout } from './theme.js';
@@ -73,6 +74,7 @@ export function openOnboarding() {
         ['link', 'Importuj', 'Playlisty ze Spotify i YouTube'],
         ['palette', 'Dopasuj', 'Motywy, układ paneli i pluginy'],
       ].map(([ic, t, d]) => h('div.ob-feat', { html: `${icon(ic)}<b>${esc(t)}</b><small>${esc(d)}</small>` }))),
+      h('div.ob-lang', null, langPicker()),
     );
   }
 

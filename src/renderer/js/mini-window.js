@@ -1,5 +1,6 @@
 // Okno mini odtwarzacza – tylko wyświetla stan i odsyła polecenia do aplikacji.
 import { icon } from './icons.js';
+import { setupI18n } from './i18n.js';
 
 const $ = (id) => document.getElementById(id);
 const M = window.mini;
@@ -147,7 +148,9 @@ setInterval(() => {
 }, 250);
 
 let lastKey = '';
+let langSet = false;
 M.onState((s) => {
+  if (s.lang && !langSet) { langSet = true; setupI18n(s.lang); }
   const key = `${s.id}|${s.title}|${s.playing}|${s.loading}|${s.liked}|${s.thumb}|${s.onTop}|${s.vol}|${s.muted}|${JSON.stringify(s.theme || null)}`;
   st = { ...st, ...s };
   lastTick = performance.now();

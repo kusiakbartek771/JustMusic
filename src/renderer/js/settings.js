@@ -8,6 +8,7 @@ import { P, applyNormalize, lufsOf, loudnessAvailable } from './player.js';
 import { eqPanel } from './playerbar.js';
 import { plugins, setPluginEnabled, reloadPlugins, storeCatalog, installPlugin, uninstallPlugin } from './plugins.js';
 import { flush } from './state.js';
+import { langPicker } from './langpicker.js';
 import { updatesPanel } from './updates.js';
 import { addFolder, removeFolder, rescan } from './library.js';
 
@@ -106,6 +107,7 @@ const SECTIONS = {
   appearance(body) {
     const T = S.settings.theme;
     body.append(h('h2', { text: 'Motyw i kolory' }), h('p', { text: 'Wybierz gotowy motyw, a potem dopasuj każdy kolor do siebie.' }));
+    body.append(group('Język', row('Język interfejsu', 'Tłumaczy całą aplikację i pluginy. Po zmianie interfejs przeładuje się (muzyka gra dalej).', langPicker())));
 
     const grid = h('div.theme-grid');
     const pluginGrid = h('div.theme-grid');

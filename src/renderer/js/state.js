@@ -26,6 +26,7 @@ export const DEFAULT_SETTINGS = {
   system: { tray: true, closeToTray: false, taskbarProgress: true, desktopEntry: true },
   updates: { autoCheck: true, autoInstall: true },
   onboarded: false,
+  lang: null,        // null = przy pierwszym uruchomieniu język systemu
 };
 
 export const DEFAULT_DATA = {

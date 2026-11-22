@@ -1,5 +1,5 @@
 // JustMusic – start interfejsu.
-import { S, initState, on, emit, flush, toggleLike } from './state.js';
+import { S, initState, on, emit, flush, toggleLike, saveSettings } from './state.js';
 import { applyAll, setupResizers } from './theme.js';
 import { navigate, goBack, goForward } from './router.js';
 import { renderTitlebar, renderSidebar, focusSearch, toggleQueue } from './shell.js';
@@ -13,6 +13,7 @@ import { toast } from './ui.js';
 import { registerBuiltinCommands, shortcutState } from './commands.js';
 import { setupSystemIntegration } from './sysint.js';
 import { setupMiniPlayer } from './miniplayer.js';
+import { setupI18n, pickLang } from './i18n.js';
 import { setupUpdates } from './updates.js';
 import { setupSurvey } from './survey.js';
 import { shouldOnboard, openOnboarding } from './onboarding.js';
@@ -21,6 +22,9 @@ import './settings.js';
 
 async function boot() {
   await initState();
+  // język: przy pierwszym uruchomieniu z systemu, potem zapisany wybór
+  if (!S.settings.lang) { S.settings.lang = pickLang(null, S.settings.onboarded); saveSettings(); }
+  await setupI18n(S.settings.lang);
   document.documentElement.classList.add(S.platform === 'darwin' ? 'mac' : S.platform === 'win32' ? 'win' : 'linux');
   applyAll();
   window.jm.yt.config(S.settings.youtube).catch(() => {});

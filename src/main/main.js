@@ -296,6 +296,7 @@ function setupIpc() {
       yt.setConfig({ ...(data.youtube || {}) });
       const trayWas = appSettings.system?.tray !== false;
       appSettings = data;
+      system.setLang(data.lang);
       const trayNow = data.system?.tray !== false;
       if (trayWas !== trayNow) system.setTray(trayNow);
     }
@@ -505,6 +506,7 @@ app.whenReady().then(async () => {
   widgets.init((ev) => send('widgets:event', ev), () => system.toggleWindow(true));
   updater.init((st) => send('update:status', { ...st, current: app.getVersion() }), () => appSettings);
   createWindow();
+  system.setLang(appSettings.lang);
   if (appSettings.system?.tray !== false) system.setTray(true);
   if (appSettings.system?.desktopEntry !== false) system.ensureDesktopEntry();
   system.idleSeconds(); // Wayland: połącz z kompozytorem od razu, żeby liczyć bezczynność od startu

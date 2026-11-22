@@ -20,7 +20,7 @@ export default function activate(api) {
   let lastErr = '';
   let autoTried = false; // pierwsza próba się nie udała – dalej łączy się samo
   let afk = !!api.bus.last('afk');
-  let together = api.bus.last('together') || { active: false }; // plugin „Słuchajmy razem”
+  let together = api.bus.last('together') || { active: false }; // plugin „CanWeListenTogether”
   const speaking = new Set();
   let audioSpeaking = false;   // wykrywanie po dźwięku (Linux)
   let audioApps = [];
@@ -185,7 +185,7 @@ export default function activate(api) {
         api.ui.settingRow('Na liście członków', 'Co znajomi widzą pod Twoim nickiem.', api.ui.select([['app', 'Słucha JustMusic'], ['song', 'Słucha <tytuł utworu>']], c.listName, (v) => { save({ listName: v }); push(true); })),
         S('Logo JustMusic', 'Mała ikona JustMusic przy okładce w statusie.', 'showLogo'),
         S('Status AFK', 'Gdy GoToSleep wykryje nieobecność, status pokaże 💤 AFK.', 'afkStatus'),
-        S('Słuchajmy razem', 'Z pluginem „Słuchajmy razem” status pokaże 👥 i liczbę słuchających.', 'togetherStatus'),
+        S('CanWeListenTogether', 'Z pluginem „CanWeListenTogether” status pokaże 👥 i liczbę słuchających.', 'togetherStatus'),
         S('Przyciszaj, gdy ktoś mówi', 'Muzyka cichnie, gdy na kanale głosowym ktoś mówi.', 'duck'),
         ...(c.duck ? [
           (() => {

@@ -31,6 +31,7 @@ function full() {
     shuffle: pb.shuffle,
     repeat: pb.repeat,
     theme: themeOf(),
+    lang: S.settings.lang || 'pl',
   };
 }
 

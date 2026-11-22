@@ -173,19 +173,33 @@ function setAutostart(enabled, hidden) {
 }
 
 // ---------------- zasobnik ----------------
+// teksty menu zasobnika i miniatury paska zadań (poza interfejsem, więc tłumaczone tutaj)
+const TR = {
+  en: { 'Nic nie gra': 'Nothing playing', 'Pauza': 'Pause', 'Odtwórz': 'Play', 'Następny': 'Next', 'Poprzedni': 'Previous', 'Ukryj okno': 'Hide window', 'Pokaż okno': 'Show window', 'Mini odtwarzacz': 'Mini player', 'Zakończ JustMusic': 'Quit JustMusic' },
+  uk: { 'Nic nie gra': 'Нічого не грає', 'Pauza': 'Пауза', 'Odtwórz': 'Відтворити', 'Następny': 'Наступний', 'Poprzedni': 'Попередній', 'Ukryj okno': 'Сховати вікно', 'Pokaż okno': 'Показати вікно', 'Mini odtwarzacz': 'Міні-плеєр', 'Zakończ JustMusic': 'Вийти з JustMusic' },
+  de: { 'Nic nie gra': 'Nichts läuft', 'Pauza': 'Pause', 'Odtwórz': 'Abspielen', 'Następny': 'Nächster', 'Poprzedni': 'Vorheriger', 'Ukryj okno': 'Fenster ausblenden', 'Pokaż okno': 'Fenster anzeigen', 'Mini odtwarzacz': 'Mini-Player', 'Zakończ JustMusic': 'JustMusic beenden' },
+};
+let lang = 'pl';
+const tr = (s) => TR[lang]?.[s] || s;
+function setLang(l) {
+  if (l === lang) return;
+  lang = l || 'pl';
+  refreshTray();
+}
+
 function trayMenu() {
   const w = getWin();
   const visible = w && w.isVisible() && !w.isMinimized();
   return Menu.buildFromTemplate([
-    { label: now.hasTrack ? `${now.title}${now.artist ? ' — ' + now.artist : ''}`.slice(0, 60) : 'Nic nie gra', enabled: false },
+    { label: now.hasTrack ? `${now.title}${now.artist ? ' — ' + now.artist : ''}`.slice(0, 60) : tr('Nic nie gra'), enabled: false },
     { type: 'separator' },
-    { label: now.playing ? 'Pauza' : 'Odtwórz', enabled: now.hasTrack, click: () => sendCmd('toggle') },
-    { label: 'Następny', enabled: now.hasTrack, click: () => sendCmd('next') },
-    { label: 'Poprzedni', enabled: now.hasTrack, click: () => sendCmd('prev') },
+    { label: now.playing ? tr('Pauza') : tr('Odtwórz'), enabled: now.hasTrack, click: () => sendCmd('toggle') },
+    { label: tr('Następny'), enabled: now.hasTrack, click: () => sendCmd('next') },
+    { label: tr('Poprzedni'), enabled: now.hasTrack, click: () => sendCmd('prev') },
     { type: 'separator' },
-    { label: visible ? 'Ukryj okno' : 'Pokaż okno', click: () => toggleWindow() },
-    { label: 'Mini odtwarzacz', click: () => require('./mini').toggle() },
-    { label: 'Zakończ JustMusic', click: () => { app.isQuitting = true; app.quit(); } },
+    { label: visible ? tr('Ukryj okno') : tr('Pokaż okno'), click: () => toggleWindow() },
+    { label: tr('Mini odtwarzacz'), click: () => require('./mini').toggle() },
+    { label: tr('Zakończ JustMusic'), click: () => { app.isQuitting = true; app.quit(); } },
   ]);
 }
 
@@ -228,9 +242,9 @@ function updateThumbar() {
   if (!isWin || !w) return;
   try {
     w.setThumbarButtons(now.hasTrack ? [
-      { tooltip: 'Poprzedni', icon: icon('thumbar/prev.png'), click: () => sendCmd('prev') },
-      { tooltip: now.playing ? 'Pauza' : 'Odtwórz', icon: icon(now.playing ? 'thumbar/pause.png' : 'thumbar/play.png'), click: () => sendCmd('toggle') },
-      { tooltip: 'Następny', icon: icon('thumbar/next.png'), click: () => sendCmd('next') },
+      { tooltip: tr('Poprzedni'), icon: icon('thumbar/prev.png'), click: () => sendCmd('prev') },
+      { tooltip: now.playing ? tr('Pauza') : tr('Odtwórz'), icon: icon(now.playing ? 'thumbar/pause.png' : 'thumbar/play.png'), click: () => sendCmd('toggle') },
+      { tooltip: tr('Następny'), icon: icon('thumbar/next.png'), click: () => sendCmd('next') },
     ] : []);
   } catch {}
 }
@@ -305,6 +319,7 @@ function idleSeconds() {
 }
 
 module.exports = {
+  setLang,
   init, setTray, hasTray, toggleWindow, nowPlaying, progress,
   shortcutStatus, installShortcut, removeShortcut, ensureDesktopEntry, getAutostart, setAutostart,
   registerGlobal, unregisterGlobal, unregisterAllGlobals, idleSeconds,
