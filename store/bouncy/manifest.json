@@ -1,11 +1,16 @@
 {
   "id": "bouncy",
   "name": "Bouncy",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "author": "JustMusic",
   "icon": "activity",
-  "tags": ["efekty", "bas", "zabawa"],
-  "short": "Aplikacja trzęsie się i pulsuje w rytm mocnego basu.",
-  "description": "• wykrywa uderzenia basu w czasie rzeczywistym (20–150 Hz)\n• trzy efekty: trzęsienie, puls i oba naraz\n• wybór, co się rusza: cała aplikacja, okładka albo odtwarzacz\n• regulacja siły efektu i czułości – od delikatnego bujania po trzęsienie ziemi\n• błysk akcentu przy najmocniejszych uderzeniach\nDziała ze wszystkimi źródłami: YouTube, Spotify i plikami lokalnymi.",
+  "tags": [
+    "efekty",
+    "bas",
+    "zabawa",
+    "rytm"
+  ],
+  "short": "Aplikacja trzęsie się i pulsuje w rytm piosenki albo mocnego basu.",
+  "description": "• wykrywa tempo piosenki (BPM) i trzęsie aplikacją na każde uderzenie rytmu – także w utworach bez mocnego basu\n• tryb „Uderzenia basu”: reaguje na nagłe skoki basu w czasie rzeczywistym\n• działa przy każdej głośności (automatyczne wzmocnienie), także z wyrównywaniem głośności\n• trzy efekty: trzęsienie, puls i oba naraz\n• wybór, co się rusza: cała aplikacja, okładka albo odtwarzacz\n• regulacja siły efektu i czułości – od delikatnego bujania po trzęsienie ziemi\n• błysk akcentu przy najmocniejszych uderzeniach\nDziała ze wszystkimi źródłami: YouTube, Spotify i plikami lokalnymi.",
   "main": "index.js"
 }

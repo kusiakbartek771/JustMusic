@@ -1251,5 +1251,15 @@
  "synchronizacja": "sync",
  "grafika": "graphics",
  "widżet": "widget",
- "pulpit": "desktop"
+ "pulpit": "desktop",
+ "Reaguj na": "React to",
+ "Rytm piosenki wykrywa tempo i trzęsie na każde uderzenie – także gdy bas jest słaby.": "Song rhythm detects the tempo and shakes on every beat – even when the bass is weak.",
+ "Rytm piosenki (tempo)": "Song rhythm (tempo)",
+ "Uderzenia basu": "Bass hits",
+ "Wyżej = reaguje na słabsze uderzenia i mniej wyraźny rytm.": "Higher = reacts to weaker hits and a less clear rhythm.",
+ "Wykryte tempo": "Detected tempo",
+ "Tempo piosenki i pewność wykrycia (w trybie „Rytm piosenki”).": "Song tempo and detection confidence (in “Song rhythm” mode).",
+ "rytm": "rhythm",
+ "Aplikacja trzęsie się i pulsuje w rytm piosenki albo mocnego basu.": "The app shakes and pulses to the rhythm of the song or heavy bass.",
+ "• wykrywa tempo piosenki (BPM) i trzęsie aplikacją na każde uderzenie rytmu – także w utworach bez mocnego basu\n• tryb „Uderzenia basu”: reaguje na nagłe skoki basu w czasie rzeczywistym\n• działa przy każdej głośności (automatyczne wzmocnienie), także z wyrównywaniem głośności\n• trzy efekty: trzęsienie, puls i oba naraz\n• wybór, co się rusza: cała aplikacja, okładka albo odtwarzacz\n• regulacja siły efektu i czułości – od delikatnego bujania po trzęsienie ziemi\n• błysk akcentu przy najmocniejszych uderzeniach\nDziała ze wszystkimi źródłami: YouTube, Spotify i plikami lokalnymi.": "• detects the song tempo (BPM) and shakes the app on every beat – even in tracks without heavy bass\n• “Bass hits” mode: reacts to sudden bass spikes in real time\n• works at any volume (automatic gain), also with volume normalization\n• three effects: shake, pulse and both at once\n• choose what moves: the whole app, the cover or the player\n• adjust effect strength and sensitivity – from a gentle sway to an earthquake\n• accent flash on the strongest hits\nWorks with all sources: YouTube, Spotify and local files."
 }

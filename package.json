@@ -1,7 +1,7 @@
 {
   "name": "justmusic",
   "productName": "JustMusic",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "description": "JustMusic – odtwarzacz muzyki: YouTube, Spotify, pliki lokalne, pobieranie, pluginy i pełna customizacja.",
   "main": "src/main/main.js",
   "author": "JustMusic contributors",
