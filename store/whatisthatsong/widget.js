@@ -98,7 +98,7 @@ function applyConfig() {
   root.className = [
     'w', `layout-${cfg.layout}`, `align-${s.align}`, `shape-${s.coverShape}`, `ctl-${s.controls}`,
     s.shadow && 'shadow', s.border && 'border', s.textShadow && 'tshadow', s.bold && 'bold', s.coverBg && 'coverbg',
-    cfg.behavior.locked || preview || isPopup ? 'locked' : 'drag', preview && 'preview',
+    cfg.behavior.locked || preview || isPopup ? 'locked' : manualDrag ? 'mdrag' : 'drag', preview && 'preview',
     ...Object.entries(cfg.show).filter(([, v]) => !v).map(([k]) => `no-${k}`),
   ].filter(Boolean).join(' ');
   render();
@@ -240,13 +240,42 @@ if (isPopup && !preview) {
   osd.box.addEventListener('click', popHide);
 }
 
+// ---------- przesuwanie ----------
+// Nowsze JustMusic na Windowsie/macOS przesuwa okno samo (systemowy obszar przeciągania potrafił
+// tam przykryć przyciski – zamiast kliknięcia widżet się przesuwał). Starsze: -webkit-app-region.
+const manualDrag = !preview && !!(window.jmw && window.jmw.manualDrag && window.jmw.dragStart);
+// okładkę też można chwycić – samo kliknięcie (bez ruchu) dalej otwiera JustMusic
+const INTERACTIVE = 'button, .bar, .has-artist .artist';
+let dragging = false;
+let downAt = null; // miejsce wciśnięcia – odróżnia kliknięcie od przeciągnięcia
+let wasDrag = false;
+if (manualDrag) {
+  root.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0 || !root.classList.contains('mdrag') || e.target.closest(INTERACTIVE)) return;
+    dragging = true;
+    try { root.setPointerCapture(e.pointerId); } catch {}
+    downAt = { x: e.screenX, y: e.screenY };
+    wasDrag = false;
+    window.jmw.dragStart();
+  });
+  // koniec tylko po puszczeniu przycisku – okno przesuwa się pod kursorem, więc inne zdarzenia
+  // (utrata przechwycenia, wyjście kursora) przychodzą w trakcie i nie oznaczają końca
+  const end = (why) => { if (!dragging) return; dragging = false; window.jmw.dragEnd(why); };
+  addEventListener('pointerup', () => end('up'), true);
+  addEventListener('pointermove', (e) => {
+    if (!dragging) return;
+    if (!(e.buttons & 1)) return end('move');
+    if (downAt && Math.hypot(e.screenX - downAt.x, e.screenY - downAt.y) > 4) wasDrag = true;
+  }, true);
+}
+
 // ---------- sterowanie ----------
 const cmd = (c, extra) => chan.post({ cmd: c, ...extra });
 el.play.addEventListener('click', () => { st.playing = !st.playing; st.time = position(); st.at = Date.now(); render(); cmd('toggle'); });
 el.prev.addEventListener('click', () => cmd('prev'));
 el.nextBtn.addEventListener('click', () => cmd('next'));
 el.like.addEventListener('click', () => { st.liked = !st.liked; render(); cmd('like'); });
-el.cover.addEventListener('click', () => chan.focusApp());
+el.cover.addEventListener('click', () => { if (wasDrag) { wasDrag = false; return; } chan.focusApp(); });
 // przewijanie: kliknięcie albo przeciągnięcie po pasku (podczas przeciągania widać czas)
 let seeking = false;
 const ratioAt = (e) => { const r = el.bar.getBoundingClientRect(); return Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)); };

@@ -12,6 +12,11 @@ contextBridge.exposeInMainWorld('jmw', {
   post: (msg) => ipcRenderer.send('widget:post', msg),
   /** dopasowanie okna do rozmiaru treści */
   resize: (w, h) => ipcRenderer.send('widget:resize', w, h),
+  /** Windows/macOS: przesuwanie okna przez aplikację zamiast -webkit-app-region (ten na Windowsie
+   *  potrafi przykryć przyciski i wtedy zamiast kliknięcia okno się przesuwa) */
+  manualDrag: process.platform === 'win32' || process.platform === 'darwin',
+  dragStart: () => ipcRenderer.send('widget:drag', true),
+  dragEnd: (why) => ipcRenderer.send('widget:drag', false, why),
   /** pokazuje główne okno JustMusic */
   focusApp: () => ipcRenderer.send('widget:focusApp'),
 });

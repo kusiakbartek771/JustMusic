@@ -237,6 +237,35 @@ function schedulePoll() {
   }, 2500);
 }
 
+// przesuwanie okna za kursorem (Windows/macOS) – zamiast -webkit-app-region
+let drag = null; // { key, item, dx, dy, timer, until }
+function stopDrag() {
+  if (!drag) return;
+  clearInterval(drag.timer);
+  const { key, item, x0, y0 } = drag;
+  drag = null;
+  if (item.win.isDestroyed()) return;
+  const [x, y] = item.win.getPosition();
+  if (x === x0 && y === y0) return; // samo kliknięcie – położenie bez zmian
+  item.last = { x, y };
+  emit({ type: 'moved', key, x, y });
+}
+function startDrag(key) {
+  stopDrag();
+  const item = wins.get(key);
+  if (!item || item.win.isDestroyed() || item.soft) return;
+  const c = screen.getCursorScreenPoint();
+  const [x, y] = item.win.getPosition();
+  drag = { key, item, x0: x, y0: y, dx: c.x - x, dy: c.y - y, until: Date.now() + 120000 };
+  drag.timer = setInterval(() => {
+    if (!drag || item.win.isDestroyed() || Date.now() > drag.until) return stopDrag();
+    const p = screen.getCursorScreenPoint();
+    const nx = p.x - drag.dx, ny = p.y - drag.dy;
+    const [cx, cy] = item.win.getPosition();
+    if (cx !== nx || cy !== ny) { item.movedByUs = Date.now(); item.win.setPosition(nx, ny); }
+  }, 12);
+}
+
 function keyOf(sender) {
   for (const [key, item] of wins) if (!item.win.isDestroyed() && item.win.webContents === sender) return key;
   return null;
@@ -249,6 +278,12 @@ function init(emitter, onFocusApp) {
   ipcMain.on('widget:post', (e, msg) => {
     const key = keyOf(e.sender);
     if (key) emit({ type: 'message', key, msg });
+  });
+  ipcMain.on('widget:drag', (e, on, why) => {
+    const key = keyOf(e.sender);
+    if (!key) return;
+    if (process.env.JM_DEBUG) console.log('[widget drag]', key, on ? 'start' : 'end ' + why, JSON.stringify(screen.getCursorScreenPoint()));
+    if (on) startDrag(key); else if (drag?.key === key) stopDrag();
   });
   ipcMain.on('widget:resize', (e, w, h) => {
     const key = keyOf(e.sender);

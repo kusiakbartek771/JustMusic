@@ -15,6 +15,9 @@ button { font: inherit; color: inherit; }
   isolation: isolate;
 }
 .w.drag { -webkit-app-region: drag; }
+.w.mdrag { cursor: grab; }
+.w.mdrag:active { cursor: grabbing; }
+.w.mdrag button, .w.mdrag .bar, .w.mdrag.has-artist .artist { cursor: pointer; }
 .w.drag button, .w.drag .bar, .w.drag .cover, .w.drag.has-artist .artist { -webkit-app-region: no-drag; }
 .w.border { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text) 12%, transparent); }
 .w.shadow { box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.25); }
