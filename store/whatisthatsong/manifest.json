@@ -1,9 +1,9 @@
 {
   "id": "whatisthatsong",
   "name": "WhatIsThatSong?",
-  "version": "1.1.0",
-  "short": "Widżety i popupy z tym, co teraz gra – zawsze na wierzchu, z własnym wyglądem.",
-  "description": "Pokazuje aktualny utwór w małych widżetach na pulpicie, które są zawsze na ekranie (nad innymi oknami i na każdym pulpicie wirtualnym).\n• 5 układów: karta, pionowa, pasek, sama okładka, sam tekst\n• wybierasz, co widać: okładka, tytuł, wykonawca, album, postęp, czas, przyciski, serduszko, następny utwór\n• gotowe style (szkło, neon, retro, terminal…) albo własne kolory, czcionka, rozmiar, zaokrąglenie, cień, tło z okładki\n• położenie: róg lub krawędź ekranu z odstępem albo przeciągnięcie myszką\n• przepuszczanie kliknięć, ukrywanie podczas pauzy, kilka widżetów naraz\n• popupy: przy nowym utworze, po skrócie klawiszowym (domyślnie Ctrl+Alt+W) oraz przy zmianie głośności, pauzie i przewijaniu – z animacją i własnym stylem\n• edytor z podglądem na żywo (menu „Widżety”)\nWymaga JustMusic 1.4.0 lub nowszego.",
+  "version": "1.2.0",
+  "short": "Widżety i popupy z tym, co teraz gra – sterujesz muzyką bez otwierania aplikacji.",
+  "description": "Pokazuje aktualny utwór w małych widżetach na pulpicie, które są zawsze na ekranie (nad innymi oknami i na każdym pulpicie wirtualnym).\n• pełne sterowanie z widżetu: pauza, poprzedni/następny, przewijanie ±10 s i przeciąganiem paska, polubienie, przejście do profilu wykonawcy\n• 5 układów: karta, pionowa, pasek, sama okładka, sam tekst\n• wybierasz, co widać: okładka, tytuł, wykonawca, album, postęp, czas, przyciski, ±10 s, wykonawca, serduszko, następny utwór\n• gotowe style (szkło, neon, retro, terminal…) albo własne kolory, czcionka, rozmiar, zaokrąglenie, cień, tło z okładki\n• położenie: róg lub krawędź ekranu z odstępem albo przeciągnięcie myszką\n• przepuszczanie kliknięć, ukrywanie podczas pauzy, kilka widżetów naraz\n• popupy: przy nowym utworze, po skrócie klawiszowym (domyślnie Ctrl+Alt+W) oraz przy zmianie głośności, pauzie i przewijaniu – z animacją i własnym stylem\n• edytor z podglądem na żywo (menu „Widżety”)\nWymaga JustMusic 1.4.0 lub nowszego.",
   "author": "JustMusic",
   "main": "index.js",
   "style": "style.css",

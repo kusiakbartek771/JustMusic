@@ -26,6 +26,9 @@ const ICONS = {
   volumeLow: '<path d="M11 5 6 9H2v6h4l5 4V5Z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>',
   mute: '<path d="M11 5 6 9H2v6h4l5 4V5Z"/><path d="m22 9-6 6"/><path d="m16 9 6 6"/>',
   seek: '<path d="M13 19V5l9 7-9 7Z" fill="currentColor" stroke="none"/><path d="M3 19V5l9 7-9 7Z" fill="currentColor" stroke="none"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+  fwd10: '<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>',
+  back10: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>',
   back: '<path d="M11 19V5l-9 7 9 7Z" fill="currentColor" stroke="none"/><path d="M21 19V5l-9 7 9 7Z" fill="currentColor" stroke="none"/>',
 };
 const svg = (n) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[n]}</svg>`;
@@ -37,15 +40,18 @@ root.innerHTML = `
   <div class="info">
     <div class="status"><span class="viz"><i></i><i></i><i></i></span><span class="st-text">Teraz gra</span></div>
     <div class="title"><span></span></div>
-    <div class="artist"></div>
+    <div class="artist" title="Pokaż wykonawcę"></div>
     <div class="album"></div>
     <div class="next"></div>
   </div>
   <div class="ctl">
     <button class="b-like" title="Polub">${svg('heart')}</button>
     <button class="b-prev" title="Poprzedni">${svg('prev')}</button>
+    <button class="b-back sk" title="Cofnij 10 s">${svg('back10')}<b>10</b></button>
     <button class="b-play main" title="Odtwórz / pauza">${svg('play')}</button>
+    <button class="b-fwd sk" title="Do przodu 10 s">${svg('fwd10')}<b>10</b></button>
     <button class="b-next" title="Następny">${svg('next')}</button>
+    <button class="b-artist" title="Pokaż wykonawcę">${svg('user')}</button>
   </div>
   <div class="prog">
     <div class="bar"><i></i></div>
@@ -56,6 +62,7 @@ const el = {
   bg: $('.bgimg'), cover: $('.cover'), img: $('.cover img'), title: $('.title span'), titleBox: $('.title'), artist: $('.artist'), album: $('.album'),
   next: $('.next'), st: $('.st-text'), bar: $('.bar'), fill: $('.bar i'), cur: $('.t-cur'), dur: $('.t-dur'),
   like: $('.b-like'), play: $('.b-play'), prev: $('.b-prev'), nextBtn: $('.b-next'),
+  back: $('.b-back'), fwd: $('.b-fwd'), artistBtn: $('.b-artist'), prog: $('.prog'),
 };
 
 let cfg = normalize({});
@@ -121,6 +128,8 @@ function render() {
   el.like.innerHTML = svg(st.liked ? 'heartFill' : 'heart');
   el.like.classList.toggle('on', !!st.liked);
   el.like.hidden = !t;
+  el.artistBtn.hidden = !t?.artist;
+  root.classList.toggle('has-artist', !!t?.artist);
   const thumb = t?.thumb || null;
   if (thumb !== lastThumb) {
     lastThumb = thumb;
@@ -155,6 +164,7 @@ function position() {
   return st.duration ? Math.min(st.duration, p) : p;
 }
 function tick() {
+  if (seeking) return;
   const p = position();
   el.fill.style.width = st.duration ? `${(p / st.duration) * 100}%` : '0%';
   el.cur.textContent = fmt(p);
@@ -237,18 +247,63 @@ el.prev.addEventListener('click', () => cmd('prev'));
 el.nextBtn.addEventListener('click', () => cmd('next'));
 el.like.addEventListener('click', () => { st.liked = !st.liked; render(); cmd('like'); });
 el.cover.addEventListener('click', () => chan.focusApp());
-el.bar.addEventListener('click', (e) => {
-  const r = el.bar.getBoundingClientRect();
-  const ratio = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
-  if (st.duration) { st.time = ratio * st.duration; st.at = Date.now(); tick(); }
-  cmd('seek', { ratio });
+// przewijanie: kliknięcie albo przeciągnięcie po pasku (podczas przeciągania widać czas)
+let seeking = false;
+const ratioAt = (e) => { const r = el.bar.getBoundingClientRect(); return Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)); };
+const showSeek = (ratio) => {
+  el.fill.style.width = `${ratio * 100}%`;
+  if (st.duration) el.cur.textContent = fmt(ratio * st.duration);
+};
+el.bar.addEventListener('pointerdown', (e) => {
+  if (!st.track || e.button !== 0) return;
+  e.preventDefault();
+  seeking = true;
+  root.classList.add('seeking');
+  try { el.bar.setPointerCapture(e.pointerId); } catch {}
+  showSeek(ratioAt(e));
 });
+el.bar.addEventListener('pointermove', (e) => { if (seeking) showSeek(ratioAt(e)); });
+const endSeek = (e, apply) => {
+  if (!seeking) return;
+  seeking = false;
+  root.classList.remove('seeking');
+  if (!apply) return tick();
+  const ratio = ratioAt(e);
+  if (st.duration) { st.time = ratio * st.duration; st.at = Date.now(); }
+  tick();
+  cmd('seek', { ratio });
+};
+el.bar.addEventListener('pointerup', (e) => endSeek(e, true));
+el.bar.addEventListener('pointercancel', (e) => endSeek(e, false));
+const skip = (d) => {
+  if (!st.track) return;
+  const p = position() + d;
+  st.time = Math.max(0, st.duration ? Math.min(st.duration, p) : p);
+  st.at = Date.now();
+  tick();
+  cmd('seekBy', { delta: d });
+};
+el.back.addEventListener('click', () => skip(-10));
+el.fwd.addEventListener('click', () => skip(10));
+// profil wykonawcy – otwiera JustMusic na stronie wykonawcy
+const openArtist = () => { if (!st.track?.artist || preview) return; chan.focusApp(); cmd('artist'); };
+el.artistBtn.addEventListener('click', openArtist);
+el.artist.addEventListener('click', openArtist);
 root.addEventListener('wheel', (e) => { e.preventDefault(); cmd('volume', { delta: e.deltaY < 0 ? 0.05 : -0.05 }); }, { passive: false });
+
+// język interfejsu (JustMusic 1.6+; na starszych wersjach zostaje polski)
+let langSet = false;
+function setLang(code) {
+  if (langSet || !code || code === 'pl') return;
+  langSet = true;
+  import('/js/i18n.js').then((m) => m.setupI18n(code)).catch(() => {});
+}
 
 chan.on((m) => {
   if (m.t === 'config') {
     cfg = normalize(m.w);
     theme = m.theme || {};
+    setLang(m.lang);
     applyConfig();
   } else if (m.t === 'state') {
     st = { ...st, ...m, at: Date.now() };

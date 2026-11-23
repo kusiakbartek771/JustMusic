@@ -15,7 +15,7 @@ button { font: inherit; color: inherit; }
   isolation: isolate;
 }
 .w.drag { -webkit-app-region: drag; }
-.w.drag button, .w.drag .bar, .w.drag .cover { -webkit-app-region: no-drag; }
+.w.drag button, .w.drag .bar, .w.drag .cover, .w.drag.has-artist .artist { -webkit-app-region: no-drag; }
 .w.border { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text) 12%, transparent); }
 .w.shadow { box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.25); }
 .w.shadow.border { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text) 12%, transparent), 0 8px 22px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.25); }
@@ -53,6 +53,8 @@ button { font: inherit; color: inherit; }
 @keyframes marquee { 0%, 15% { transform: translateX(0.5rem); } 85%, 100% { transform: translateX(var(--d)); } }
 .artist, .album, .next { font-size: 0.82rem; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .album { font-size: 0.75rem; opacity: 0.85; }
+.has-artist .artist { cursor: pointer; }
+.has-artist .artist:hover { color: var(--text); text-decoration: underline; text-underline-offset: 2px; }
 .next { font-size: 0.72rem; opacity: 0.85; margin-top: 0.1rem; }
 .align-center .info { text-align: center; align-items: center; }
 .align-center .status { justify-content: center; }
@@ -75,6 +77,11 @@ button { font: inherit; color: inherit; }
 .ctl .main { width: 2.4rem; height: 2.4rem; background: var(--accent); color: var(--accent-text); opacity: 1; }
 .ctl .main:hover { background: var(--accent); transform: scale(1.06); }
 .ctl .b-like.on { color: var(--accent); opacity: 1; }
+.ctl .b-like.on svg { animation: likepop 0.35s cubic-bezier(.3, 1.6, .5, 1); }
+@keyframes likepop { 0% { transform: scale(0.6); } 100% { transform: scale(1); } }
+.ctl .sk { position: relative; }
+.ctl .sk svg { width: 1.15rem; height: 1.15rem; }
+.ctl .sk b { position: absolute; font-size: 0.42rem; font-weight: 800; letter-spacing: -0.02em; top: 50%; left: 50%; transform: translate(-50%, -42%); pointer-events: none; }
 .ctl [hidden] { display: none; }
 .ctl-hover .ctl { opacity: 0; transition: opacity 0.18s; }
 .ctl-hover:hover .ctl { opacity: 1; }
@@ -84,22 +91,27 @@ button { font: inherit; color: inherit; }
 .bar { height: 0.3rem; border-radius: 1rem; background: color-mix(in srgb, var(--text) 16%, transparent); overflow: hidden; cursor: pointer; position: relative; }
 .bar::before { content: ''; position: absolute; inset: -0.4rem 0; }
 .bar i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: inherit; transition: width 0.25s linear; }
+.bar { transition: height 0.12s; touch-action: none; }
+.bar:hover, .seeking .bar { height: 0.45rem; }
+.seeking .bar i { transition: none; }
 .times { display: flex; justify-content: space-between; font-size: 0.68rem; color: var(--dim); margin-top: 0.3rem; font-variant-numeric: tabular-nums; }
 
 /* ukrywanie elementów */
 .no-cover .cover, .no-status .status, .no-title .title, .no-artist .artist, .no-album .album, .no-next .next,
-.no-progress .bar, .no-time .times, .no-controls .ctl, .no-like .b-like, .no-viz .viz { display: none !important; }
+.no-progress .bar, .no-time .times, .no-controls .ctl, .no-like .b-like, .no-viz .viz,
+.no-seekBtns .sk, .no-artistBtn .b-artist { display: none !important; }
+.ctl [hidden] { display: none !important; }
 .no-progress.no-time .prog { display: none; }
 .no-progress .times { margin-top: 0; }
-.idle .prog, .idle .b-like, .idle .next, .idle .album { display: none !important; }
+.idle .prog, .idle .b-like, .idle .next, .idle .album, .idle .sk, .idle .b-artist { display: none !important; }
 .idle .b-prev, .idle .b-next { opacity: 0.4; }
 
 /* ===== układy ===== */
-/* Karta: okładka | tekst | przyciski, pod spodem postęp */
-.layout-card { grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "cover info ctl" "prog prog prog"; align-items: center; }
-.layout-card.no-cover { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "info ctl" "prog prog"; }
-.layout-card .ctl .b-prev { display: none; }
-.layout-card.no-like .ctl .b-prev { display: grid; }
+/* Karta: okładka | tekst, pod spodem postęp i rząd przycisków */
+.layout-card { grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "cover info" "prog prog" "ctl ctl"; align-items: center; }
+.layout-card.no-cover { grid-template-columns: minmax(0, 1fr); grid-template-areas: "info" "prog" "ctl"; }
+.layout-card .ctl { margin-top: 0.35rem; justify-content: space-between; }
+.layout-card.no-progress.no-time .ctl { margin-top: 0.6rem; }
 
 /* Pionowa: duża okładka, tekst i przyciski pod spodem */
 .layout-tall { grid-template-columns: minmax(0, 1fr); grid-template-areas: "cover" "info" "prog" "ctl"; gap: 0.7rem; text-align: center; width: min(var(--width), 18rem); }
@@ -109,7 +121,7 @@ button { font: inherit; color: inherit; }
 .layout-tall .status { justify-content: center; }
 .layout-tall .title { font-size: 1.15rem; max-width: 100%; }
 .layout-tall .prog { margin-top: 0; }
-.layout-tall .ctl { gap: 0.6rem; }
+.layout-tall .ctl { gap: 0.1rem; justify-content: space-between; }
 
 /* Pasek: jedna linia, cienki postęp na dole */
 .layout-bar { grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "cover info ctl"; align-items: center; padding: 0.5rem 0.7rem; gap: 0 0.7rem; }
@@ -124,7 +136,7 @@ button { font: inherit; color: inherit; }
 .layout-bar.no-title .artist::before { content: none; }
 .layout-bar .ctl button { width: 1.8rem; height: 1.8rem; }
 .layout-bar .ctl .main { width: 2rem; height: 2rem; }
-.layout-bar .ctl .b-like { display: none; }
+.layout-bar .ctl .b-like, .layout-bar .ctl .b-artist, .layout-bar .ctl .sk { display: none; }
 .layout-bar .prog { position: absolute; left: 0; right: 0; bottom: 0; margin: 0; }
 .layout-bar .bar { height: 3px; border-radius: 0; }
 .layout-bar .times { display: none; }
@@ -139,7 +151,8 @@ button { font: inherit; color: inherit; }
 .layout-cover .artist, .layout-cover .album, .layout-cover .next { color: rgba(255, 255, 255, 0.8); }
 .layout-cover .prog { align-self: end; margin: 0 0.9rem 0.6rem; }
 .layout-cover .times { display: none; }
-.layout-cover .ctl { align-self: center; pointer-events: auto; opacity: 0; transition: opacity 0.18s; color: #fff; }
+.layout-cover .ctl { align-self: center; pointer-events: auto; opacity: 0; transition: opacity 0.18s; color: #fff; flex-wrap: wrap; padding: 0 0.4rem; gap: 0.25rem; }
+.layout-cover .info .artist { pointer-events: auto; }
 .layout-cover:hover .ctl { opacity: 1; }
 .layout-cover .ctl button { background: rgba(0, 0, 0, 0.45); }
 .layout-cover .ctl .main { background: var(--accent); }
@@ -150,7 +163,7 @@ button { font: inherit; color: inherit; }
 /* Sam tekst: do nakładek, np. na stream */
 .layout-text { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "info ctl" "prog prog"; align-items: center; width: auto; min-width: 10rem; max-width: var(--width); padding: 0.6rem 0.9rem; }
 .layout-text .cover { display: none; }
-.layout-text .ctl .b-prev, .layout-text .ctl .b-like { display: none; }
+.layout-text .ctl .b-like, .layout-text .ctl .b-artist, .layout-text .ctl .sk { display: none; }
 
 /* w podglądzie nic się nie przeciąga */
 .preview { -webkit-app-region: no-drag; }

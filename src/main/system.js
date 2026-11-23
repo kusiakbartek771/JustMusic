@@ -14,7 +14,7 @@ const APP_ID = 'justmusic';
 let tray = null;
 let getWin = () => null;
 let sendCmd = () => {};
-let now = { title: '', artist: '', playing: false, hasTrack: false };
+let now = { title: '', artist: '', playing: false, hasTrack: false, liked: false };
 
 function init({ windowGetter, onCommand }) {
   getWin = windowGetter;
@@ -175,9 +175,9 @@ function setAutostart(enabled, hidden) {
 // ---------------- zasobnik ----------------
 // teksty menu zasobnika i miniatury paska zadań (poza interfejsem, więc tłumaczone tutaj)
 const TR = {
-  en: { 'Nic nie gra': 'Nothing playing', 'Pauza': 'Pause', 'Odtwórz': 'Play', 'Następny': 'Next', 'Poprzedni': 'Previous', 'Ukryj okno': 'Hide window', 'Pokaż okno': 'Show window', 'Mini odtwarzacz': 'Mini player', 'Zakończ JustMusic': 'Quit JustMusic' },
-  uk: { 'Nic nie gra': 'Нічого не грає', 'Pauza': 'Пауза', 'Odtwórz': 'Відтворити', 'Następny': 'Наступний', 'Poprzedni': 'Попередній', 'Ukryj okno': 'Сховати вікно', 'Pokaż okno': 'Показати вікно', 'Mini odtwarzacz': 'Міні-плеєр', 'Zakończ JustMusic': 'Вийти з JustMusic' },
-  de: { 'Nic nie gra': 'Nichts läuft', 'Pauza': 'Pause', 'Odtwórz': 'Abspielen', 'Następny': 'Nächster', 'Poprzedni': 'Vorheriger', 'Ukryj okno': 'Fenster ausblenden', 'Pokaż okno': 'Fenster anzeigen', 'Mini odtwarzacz': 'Mini-Player', 'Zakończ JustMusic': 'JustMusic beenden' },
+  en: { 'Nic nie gra': 'Nothing playing', 'Pauza': 'Pause', 'Odtwórz': 'Play', 'Następny': 'Next', 'Poprzedni': 'Previous', 'Ukryj okno': 'Hide window', 'Pokaż okno': 'Show window', 'Mini odtwarzacz': 'Mini player', 'Zakończ JustMusic': 'Quit JustMusic', 'Polub': 'Like', 'Usuń z polubionych': 'Remove from liked', 'Cofnij 10 s': 'Back 10 s', 'Do przodu 10 s': 'Forward 10 s' },
+  uk: { 'Nic nie gra': 'Нічого не грає', 'Pauza': 'Пауза', 'Odtwórz': 'Відтворити', 'Następny': 'Наступний', 'Poprzedni': 'Попередній', 'Ukryj okno': 'Сховати вікно', 'Pokaż okno': 'Показати вікно', 'Mini odtwarzacz': 'Міні-плеєр', 'Zakończ JustMusic': 'Вийти з JustMusic', 'Polub': 'Вподобати', 'Usuń z polubionych': 'Прибрати з вподобаних', 'Cofnij 10 s': 'Назад 10 с', 'Do przodu 10 s': 'Вперед 10 с' },
+  de: { 'Nic nie gra': 'Nichts läuft', 'Pauza': 'Pause', 'Odtwórz': 'Abspielen', 'Następny': 'Nächster', 'Poprzedni': 'Vorheriger', 'Ukryj okno': 'Fenster ausblenden', 'Pokaż okno': 'Fenster anzeigen', 'Mini odtwarzacz': 'Mini-Player', 'Zakończ JustMusic': 'JustMusic beenden', 'Polub': 'Gefällt mir', 'Usuń z polubionych': 'Aus Lieblingssongs entfernen', 'Cofnij 10 s': '10 s zurück', 'Do przodu 10 s': '10 s vor' },
 };
 let lang = 'pl';
 const tr = (s) => TR[lang]?.[s] || s;
@@ -242,15 +242,18 @@ function updateThumbar() {
   if (!isWin || !w) return;
   try {
     w.setThumbarButtons(now.hasTrack ? [
+      { tooltip: now.liked ? tr('Usuń z polubionych') : tr('Polub'), icon: icon(now.liked ? 'thumbar/heartFill.png' : 'thumbar/heart.png'), click: () => sendCmd('like') },
       { tooltip: tr('Poprzedni'), icon: icon('thumbar/prev.png'), click: () => sendCmd('prev') },
+      { tooltip: tr('Cofnij 10 s'), icon: icon('thumbar/back.png'), click: () => sendCmd('seekBy', -10) },
       { tooltip: now.playing ? tr('Pauza') : tr('Odtwórz'), icon: icon(now.playing ? 'thumbar/pause.png' : 'thumbar/play.png'), click: () => sendCmd('toggle') },
+      { tooltip: tr('Do przodu 10 s'), icon: icon('thumbar/forward.png'), click: () => sendCmd('seekBy', 10) },
       { tooltip: tr('Następny'), icon: icon('thumbar/next.png'), click: () => sendCmd('next') },
     ] : []);
   } catch {}
 }
 
 function nowPlaying(info) {
-  const changed = info.playing !== now.playing || info.title !== now.title || info.hasTrack !== now.hasTrack;
+  const changed = info.playing !== now.playing || info.title !== now.title || info.hasTrack !== now.hasTrack || info.liked !== now.liked;
   now = { ...now, ...info };
   if (!changed) return;
   refreshTray();

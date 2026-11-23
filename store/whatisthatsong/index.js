@@ -64,7 +64,7 @@ export default async function activate(api) {
       next: nextTrack(),
     };
   }
-  const configMsg = (w) => ({ t: 'config', w, theme: theme() });
+  const configMsg = (w) => ({ t: 'config', w, theme: theme(), lang: document.documentElement.lang || 'pl' });
 
   function post(id, msg) {
     if (id === 'popup') popHd?.post(msg).catch(() => {});
@@ -157,6 +157,12 @@ export default async function activate(api) {
       case 'prev': p.prev(); break;
       case 'like': if (p.current) api.commands.run('track.like'); break;
       case 'seek': if (p.duration && Number.isFinite(m.ratio)) p.seek(Math.max(0, Math.min(1, m.ratio)) * p.duration); break;
+      case 'seekBy': if (p.current && Number.isFinite(m.delta)) p.seek(Math.max(0, Math.min(p.duration || Infinity, p.time + m.delta))); break;
+      case 'artist': {
+        const a = p.current?.artist;
+        if (a) api.ui.navigate('search', { q: a.split(',')[0].trim() });
+        break;
+      }
       case 'volume': if (Number.isFinite(m.delta)) p.setVolume(Math.max(0, Math.min(1, p.volume + m.delta))); break;
     }
   }

@@ -1,15 +1,16 @@
 // Synchronizacja z systemem: zasobnik, pasek zadań (postęp, przyciski miniatury) i polecenia z zewnątrz.
-import { S, on } from './state.js';
+import { S, on, isLiked, toggleLike } from './state.js';
 import * as player from './player.js';
 import { runCommand } from './commands.js';
 
 export function setupSystemIntegration() {
   const sendNow = () => {
     const t = player.P.current;
-    window.jm.system.nowPlaying({ hasTrack: !!t, title: t?.title || '', artist: t?.artist || '', playing: player.P.playing }).catch(() => {});
+    window.jm.system.nowPlaying({ hasTrack: !!t, title: t?.title || '', artist: t?.artist || '', playing: player.P.playing, liked: !!t && isLiked(t.id) }).catch(() => {});
   };
   on('track', sendNow);
   on('state', sendNow);
+  on('liked', sendNow);
 
   let last = 0;
   const sendProgress = () => {
@@ -33,6 +34,8 @@ export function setupSystemIntegration() {
     if (cmd === 'toggle') player.toggle();
     else if (cmd === 'next') player.next();
     else if (cmd === 'prev') player.prev();
+    else if (cmd === 'seekBy') player.seekBy(Number(arg) || 0);
+    else if (cmd === 'like') { if (player.P.current) toggleLike(player.P.current); }
     else if (cmd === 'shortcut') runCommand(arg);
   });
   sendNow();

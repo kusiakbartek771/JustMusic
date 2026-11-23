@@ -17,7 +17,7 @@ i pełna customizacja wyglądu. Działa na **Windows, Linux i macOS**. Wszystkie
 | 🎨 **Customizacja** | 11 motywów, własne kolory, kolor akcentu, dynamiczny akcent z okładki, tło ambient, efekt szkła, zaokrąglenia, czcionki, gęstość, kształt okładek, własny CSS, udostępnianie motywów |
 | 🧩 **Układ paneli** | menu po lewej/prawej, odtwarzacz na górze/dole, panel kolejki, kompaktowe menu, zmiana szerokości paneli myszą, wybór sekcji |
 | 🔌 **Pluginy** | sklep z pluginami (aplikacja startuje bez nich): Discord, OhManyKeybinds, EvenMoreColors, GoToSleep, Bouncy, PlsSomeText, CanWeListenTogether, Wyłącznik czasowy, Wizualizer + API dla własnych |
-| 🖥️ **System** | ikona w zasobniku, zamykanie do zasobnika, postęp i przyciski na pasku zadań, skrót w menu (do przypięcia), autostart, przyciski okna w stylu aplikacji |
+| 🖥️ **System** | ikona w zasobniku, zamykanie do zasobnika, postęp i przyciski na pasku zadań (pauza, ±10 s, polub), skrót w menu (do przypięcia), autostart, przyciski okna w stylu aplikacji |
 | 🔄 **Aktualizacje** | automatyczne sprawdzanie i instalacja nowych wersji z GitHuba |
 | 💬 **Feedback** | opinie i krótka ankieta wysyłane prosto do autora – bez zakładania konta |
 | 👋 **Ekran powitalny** | wygląd, układ, silnik (yt-dlp + ffmpeg jednym kliknięciem), foldery, pluginy i system przy pierwszym uruchomieniu |
