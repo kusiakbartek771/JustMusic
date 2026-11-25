@@ -1,11 +1,11 @@
 {
   "id": "minecraft",
-  "name": "Minecraft (JustLauncher)",
-  "version": "1.0.0",
+  "name": "Minecraft (JustMinecraft)",
+  "version": "1.0.1",
   "author": "JustMusic",
   "icon": "sparkles",
   "tags": ["minecraft", "gry", "launcher"],
-  "short": "Połączenie z JustLauncherem: muzyka sama startuje z Minecraftem, sterowanie z launchera i uruchamianie gry z JustMusic.",
-  "description": "• łączy się z JustLauncherem (launcher Minecrafta do modów) na tym komputerze\n• gdy uruchomisz grę: wybrana playlista albo wznowienie muzyki, opcjonalnie ciszej na czas gry\n• po wyjściu z gry: pauza i powrót do poprzedniej głośności\n• w launcherze widać „teraz gra” z okładką i przyciskami, a także Twoje playlisty\n• widok „Minecraft” w JustMusic: lista instancji i przycisk „Graj”\n• znacznik na pasku tytułu, gdy Minecraft jest uruchomiony\nPobierz launcher: github.com/kusiakbartek771/JustLauncher",
+  "short": "Połączenie z JustMinecraftem: muzyka sama startuje z Minecraftem, sterowanie z launchera i uruchamianie gry z JustMusic.",
+  "description": "• łączy się z JustMinecraftem (launcher Minecrafta do modów) na tym komputerze\n• gdy uruchomisz grę: wybrana playlista albo wznowienie muzyki, opcjonalnie ciszej na czas gry\n• po wyjściu z gry: pauza i powrót do poprzedniej głośności\n• w launcherze widać „teraz gra” z okładką i przyciskami, a także Twoje playlisty\n• widok „Minecraft” w JustMusic: lista instancji i przycisk „Graj”\n• znacznik na pasku tytułu, gdy Minecraft jest uruchomiony\nPobierz launcher: github.com/kusiakbartek771/JustMinecraft",
   "main": "index.js"
 }

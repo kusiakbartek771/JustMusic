@@ -1,4 +1,4 @@
-// Plugin „Minecraft (JustLauncher)” – most między JustMusic a launcherem Minecrafta JustLauncher.
+// Plugin „Minecraft (JustMinecraft)” – most między JustMusic a launcherem Minecrafta JustMinecraft.
 // Launcher wystawia lokalny serwer (127.0.0.1). Plugin:
 // • odbiera polecenia (Server-Sent Events): graj playlistę, pauza, wznów, głośność, następny…
 // • wysyła stan odtwarzacza (utwór, okładka, postęp, playlisty) – launcher pokazuje „teraz gra”,
@@ -22,7 +22,7 @@ export default function activate(api) {
   const refresh = () => { for (const r of redraws) { try { r(); } catch (e) { console.error(e); } } };
 
   // ---------- znacznik na pasku tytułu ----------
-  const badge = api.ui.addTitlebarItem({ id: 'mc', icon: 'sparkles', text: 'Minecraft', title: 'JustLauncher', onClick: () => api.ui.openView('main') });
+  const badge = api.ui.addTitlebarItem({ id: 'mc', icon: 'sparkles', text: 'Minecraft', title: 'JustMinecraft', onClick: () => api.ui.openView('main') });
   const drawBadge = () => {
     badge.show(cfg().badge && !!game);
     if (game) badge.set({ text: `Minecraft · ${game.name}`, title: `Gra: ${game.name} (${game.mc})` });
@@ -165,9 +165,9 @@ export default function activate(api) {
         if (!alive) return;
         box.replaceChildren();
         box.append(h('h1', { style: 'margin: 0 0 6px' }, 'Minecraft'),
-          h('p', { style: 'opacity: .7; margin: 0 0 18px' }, connected ? 'Połączono z JustLauncherem.' : 'Uruchom JustLauncher, aby się połączyć (łączę się automatycznie).'));
+          h('p', { style: 'opacity: .7; margin: 0 0 18px' }, connected ? 'Połączono z JustMinecraftem.' : 'Uruchom JustMinecraft, aby się połączyć (łączę się automatycznie).'));
         if (!connected) {
-          box.append(api.ui.button('Pobierz JustLauncher', { primary: true, onClick: () => window.open('https://github.com/kusiakbartek771/JustLauncher/releases/latest') }));
+          box.append(api.ui.button('Pobierz JustMinecraft', { primary: true, onClick: () => window.open('https://github.com/kusiakbartek771/JustMinecraft/releases/latest') }));
           return;
         }
         let data = { instances: [] };
@@ -203,9 +203,9 @@ export default function activate(api) {
     const port = h('input', { type: 'number', value: String(c.port), min: '1024', max: '65535', style: 'width: 110px' });
     port.addEventListener('change', () => { api.storage.set('cfg', { ...cfg(), port: Math.max(1024, Math.min(65535, Number(port.value) || 47851)) }); connect(); });
     el.append(
-      api.ui.settingRow('Port JustLaunchera', 'Taki sam jak w launcherze (Ustawienia → JustMusic). Domyślnie 47851.', port),
+      api.ui.settingRow('Port JustMinecrafta', 'Taki sam jak w launcherze (Ustawienia → JustMusic). Domyślnie 47851.', port),
       api.ui.settingRow('Znacznik na pasku tytułu', 'Pokazuje, w co grasz', api.ui.switch(c.badge, (v) => { api.storage.set('cfg', { ...cfg(), badge: v }); drawBadge(); })),
-      api.ui.settingRow('Stan', connected ? 'Połączono z JustLauncherem' : 'Brak połączenia – uruchom launcher'));
+      api.ui.settingRow('Stan', connected ? 'Połączono z JustMinecraftem' : 'Brak połączenia – uruchom launcher'));
   });
 
   return () => {
