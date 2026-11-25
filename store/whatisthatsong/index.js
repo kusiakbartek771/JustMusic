@@ -160,7 +160,11 @@ export default async function activate(api) {
       case 'seekBy': if (p.current && Number.isFinite(m.delta)) p.seek(Math.max(0, Math.min(p.duration || Infinity, p.time + m.delta))); break;
       case 'artist': {
         const a = p.current?.artist;
-        if (a) api.ui.navigate('search', { q: a.split(',')[0].trim() });
+        if (a) {
+          const name = a.split(',')[0].trim();
+          // JustMusic 1.8+ ma stronę wykonawcy; starsze – wyszukiwanie
+          if ((api.version || 0) >= 3) api.ui.navigate('artist', { name }); else api.ui.navigate('search', { q: name });
+        }
         break;
       }
       case 'volume': if (Number.isFinite(m.delta)) p.setVolume(Math.max(0, Math.min(1, p.volume + m.delta))); break;

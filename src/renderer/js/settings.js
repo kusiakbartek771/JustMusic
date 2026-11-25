@@ -4,7 +4,7 @@ import { h, esc, btn, iconBtn, switchEl, select, rangeFill, toast, confirmDialog
 import { icon } from './icons.js';
 import { registerView, navigate, refresh } from './router.js';
 import { PRESETS, ACCENTS, FONTS, VAR_KEYS, themeVars, applyAll, applyLayout, applyTheme, applyStyle, updateDynamicAccent, setAmbient } from './theme.js';
-import { P, applyNormalize, lufsOf, loudnessAvailable } from './player.js';
+import { P, applyNormalize, lufsOf, loudnessAvailable, measure } from './player.js';
 import { eqPanel } from './playerbar.js';
 import { plugins, setPluginEnabled, reloadPlugins, storeCatalog, installPlugin, uninstallPlugin } from './plugins.js';
 import { flush } from './state.js';
@@ -257,6 +257,7 @@ const SECTIONS = {
       selectRow('Docelowa głośność', 'Im ciszej, tym więcej utworów jest wyrównywanych.', pb, 'normTarget', [[-11, 'Głośno (−11 LUFS)'], [-14, 'Standard (−14 LUFS, jak Spotify)'], [-18, 'Cicho (−18 LUFS)']], applyNormalize),
       rangeRow('Płynne przejścia (crossfade)', 'Koniec utworu przenika się z początkiem następnego. 0 = wyłączone.', pb, 'crossfade', 0, 12, 1, ' s'),
       toggleRow('Bez przerw między utworami (gapless)', 'Następny utwór jest wczytywany zawczasu i startuje od razu – albumy grają bez ciszy.', pb, 'gapless'),
+      toggleRow('Pomijaj ciszę na początku i końcu', 'Cisza przed muzyką i po niej jest przeskakiwana. Z ffmpeg dokładnie (mierzy ją razem z głośnością), bez niego – tylko cisza na końcu, wykrywana na żywo. Cisza w środku utworu zostaje.', pb, 'trimSilence', () => { if (P.current) measure(P.current, true); }),
     ));
     body.append(group('Zachowanie',
       rangeRow('Płynne wyciszanie (pauza/wznowienie)', null, pb, 'fadeMs', 0, 1000, 50, ' ms'),
@@ -553,20 +554,10 @@ const SECTIONS = {
     ));
     body.append(group('Twoje dane',
       row('Folder danych aplikacji', `<span class="code">${esc(S.paths.userData)}</span>`, btn('Otwórz', { cls: 'sm', onClick: () => window.jm.shell.open(S.paths.userData) })),
-      row('Kopia zapasowa', 'Zapisz playlisty, polubione i zakładki do pliku JSON (schowek).', btn('Kopiuj do schowka', { cls: 'sm', onClick: () => {
-        navigator.clipboard.writeText(JSON.stringify({ justmusicBackup: 1, data: { ...S.data, session: null } }));
-        toast('Skopiowano kopię zapasową');
-      } }), btn('Przywróć ze schowka', { cls: 'sm ghost', onClick: async () => {
-        try {
-          const j = JSON.parse(await navigator.clipboard.readText());
-          if (!j.justmusicBackup) throw new Error();
-          if (!(await confirmDialog({ title: 'Przywrócić kopię?', text: 'Obecne playlisty, polubione i zakładki zostaną zastąpione.', ok: 'Przywróć', danger: true }))) return;
-          Object.assign(S.data, j.data);
-          saveData();
-          ['playlists', 'liked', 'bookmarks', 'library'].forEach((e) => emit(e));
-          toast('Przywrócono dane');
-        } catch { toast('Schowek nie zawiera kopii JustMusic', { error: true }); }
-      } })),
+      row('Eksport i import ustawień', 'Zapisz ustawienia i bibliotekę (playlisty, polubione, zakładki) do pliku albo wczytaj je z pliku – np. na nowym komputerze.',
+        btn('Eksportuj', { cls: 'sm', icon: 'download', onClick: () => import('./backup.js').then((m) => m.exportBackup()) }),
+        btn('Importuj', { cls: 'sm ghost', icon: 'upload', onClick: () => import('./backup.js').then((m) => m.importBackup()) })),
+      row('Zgłoś problem', 'Wyślij raport z dziennikiem ostatnich błędów aplikacji.', btn('Zgłoś', { cls: 'sm', icon: 'bug', onClick: () => import('./crash.js').then((m) => m.reportProblem('')) })),
       row('Resetuj wygląd', 'Przywraca domyślny motyw, styl i układ.', btn('Resetuj', { cls: 'sm danger', onClick: async () => {
         if (!(await confirmDialog({ title: 'Zresetować wygląd?', ok: 'Resetuj', danger: true }))) return;
         S.settings.theme = structuredClone(DEFAULT_SETTINGS.theme);

@@ -516,20 +516,44 @@ async function cacheClear() {
 
 // --- pomiar głośności (EBU R128, LUFS) – do wyrównywania głośności utworów ---------------
 // Plik lokalny/pobrany czytamy bezpośrednio, strumień YouTube pobieramy kawałkami (jak yt-dlp,
-// bez dławienia) i podajemy ffmpeg na stdin. Wynik: zintegrowana głośność w LUFS albo null.
+// bez dławienia) i podajemy ffmpeg na stdin. Przy okazji wykrywamy ciszę (silencedetect) – do
+// pomijania ciszy na początku i końcu utworu.
+// Wynik: { lufs: liczba|null, silences: [{ s, e|null }], dur } (e = null → cisza trwa do końca)
 async function loudness({ file, ytId }) {
   if (!ffmpeg) await detect();
   if (!ffmpeg) throw new Error('FFMPEG_MISSING');
-  const args = ['-hide_banner', '-nostats', '-t', '900', '-i', file || 'pipe:0', '-vn', '-af', 'ebur128', '-f', 'null', '-'];
+  const args = ['-hide_banner', '-nostats', '-t', '900', '-i', file || 'pipe:0', '-vn', '-af', 'silencedetect=noise=-50dB:duration=0.4,ebur128', '-f', 'null', '-'];
   const p = spawn(ffmpeg, args, { windowsHide: true, stdio: [file ? 'ignore' : 'pipe', 'ignore', 'pipe'] });
   let err = '';
-  p.stderr.on('data', (d) => { err += d; if (err.length > 200000) err = err.slice(-20000); });
+  let line = '';
+  const silences = [];
+  let dur = 0;
+  // linie czytamy na bieżąco – bufor z całym wyjściem jest przycinany i początek by zniknął
+  const parse = (l) => {
+    let m = /silence_start:\s*(-?[\d.]+)/.exec(l);
+    if (m) { silences.push({ s: Math.max(0, Number(m[1])), e: null }); return; }
+    m = /silence_end:\s*([\d.]+)/.exec(l);
+    if (m && silences.length && silences[silences.length - 1].e === null) silences[silences.length - 1].e = Number(m[1]);
+    m = /Duration:\s*(\d+):(\d+):([\d.]+)/.exec(l);
+    if (m) dur = Number(m[1]) * 3600 + Number(m[2]) * 60 + Number(m[3]);
+    m = /time=(\d+):(\d+):([\d.]+)/.exec(l);
+    if (m) dur = Math.max(dur, Number(m[1]) * 3600 + Number(m[2]) * 60 + Number(m[3]));
+  };
+  p.stderr.on('data', (d) => {
+    const s = String(d);
+    err += s;
+    if (err.length > 200000) err = err.slice(-20000);
+    const parts = (line + s).split(/[\r\n]/);
+    line = parts.pop();
+    for (const l of parts) parse(l);
+  });
   const done = new Promise((resolve) => {
     p.on('error', () => resolve(null));
     p.on('close', () => {
+      parse(line);
       const m = /Integrated loudness:\s*\n\s*I:\s*(-?[\d.]+)\s*LUFS/.exec(err);
       const v = m ? Number(m[1]) : NaN;
-      resolve(Number.isFinite(v) && v > -70 ? v : null);
+      resolve({ lufs: Number.isFinite(v) && v > -70 ? v : null, silences: silences.slice(0, 200), dur });
     });
   });
   const kill = setTimeout(() => p.kill(), 180000);

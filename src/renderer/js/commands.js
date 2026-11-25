@@ -57,7 +57,7 @@ export async function registerBuiltinCommands() {
   add('Utwór', 'track.bookmarkNote', 'Zapisz moment z notatką', () => actions.bookmarkMoment(true));
   add('Utwór', 'track.download', 'Pobierz aktualny utwór', () => player.P.current && dl.downloadTracks([player.P.current]));
   add('Utwór', 'track.addToNewPlaylist', 'Dodaj aktualny utwór do nowej playlisty', () => player.P.current && actions.createPlaylist({ tracks: [player.P.current] }));
-  add('Utwór', 'track.searchArtist', 'Szukaj wykonawcy aktualnego utworu', () => { const a = player.P.current?.artist; if (a) router.navigate('search', { q: a.split(',')[0].trim() }); });
+  add('Utwór', 'track.searchArtist', 'Pokaż wykonawcę aktualnego utworu', () => { const a = player.P.current?.artist; if (a) router.navigate('artist', { name: a.split(',')[0].trim() }); });
   // nawigacja
   for (const [id, label] of [['home', 'Start'], ['library', 'Biblioteka'], ['liked', 'Polubione'], ['bookmarks', 'Zakładki'], ['downloads', 'Pobrane'], ['import', 'Import'], ['settings', 'Ustawienia'], ['plugins', 'Sklep z pluginami']]) {
     add('Nawigacja', `nav.${id}`, `Otwórz: ${label}`, () => (id === 'plugins' ? router.navigate('settings', 'plugins') : router.navigate(id)));

@@ -148,7 +148,7 @@ export function TrackList(o) {
       const b = e.target.closest('button').getBoundingClientRect();
       return contextMenu({ clientX: b.left - 180, clientY: b.bottom }, trackMenu(selected(), { playlistId: o.playlistId, onRemove: o.onRemove }));
     }
-    if (act === 'artist' && tracks[i].artist) return navigate('search', { q: tracks[i].artist.split(',')[0].trim() });
+    if (act === 'artist' && tracks[i].artist) return navigate('artist', { name: tracks[i].artist.split(',')[0].trim() });
     if (e.shiftKey && anchor >= 0) {
       const [a, b] = [Math.min(anchor, i), Math.max(anchor, i)];
       if (!e.ctrlKey && !e.metaKey) sel = new Set();

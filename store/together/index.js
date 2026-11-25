@@ -2,6 +2,7 @@
 // Gospodarz gra muzykę, goście słyszą to samo w tym samym momencie (każdy odtwarza u siebie,
 // synchronizowane są tylko tytuł, pozycja i pauza). Bez kont i bez własnego serwera.
 import { Room, BROKERS, newCode, normCode, randomId } from './room.js';
+import { FriendsNet } from './friends.js';
 
 const REACTIONS = ['🔥', '❤️', '😂', '👏', '🎉', '😴'];
 const LAT = 0.05;          // przybliżone opóźnienie dostarczenia wiadomości (s)
@@ -10,7 +11,7 @@ const MEMBER_TTL = 45000;  // gość bez sygnału dłużej niż tyle – znika z
 
 export default function activate(api) {
   const { h, esc } = api;
-  const D = { nick: '', control: false, add: true, discord: true, showCode: false, brokers: '' };
+  const D = { nick: '', control: false, add: true, discord: true, showCode: false, brokers: '', share: true, shareRoom: true };
   const cfg = () => ({ ...D, ...api.storage.get('cfg', {}) });
   const save = (patch) => api.storage.set('cfg', { ...cfg(), ...patch });
 
@@ -18,7 +19,8 @@ export default function activate(api) {
   let S = null;        // bieżąca sesja
   let me = '';
   const redraws = new Set();
-  const refresh = () => { for (const r of redraws) { try { r(); } catch (e) { console.error(e); } } updateChip(); emitBus(); };
+  let onRoomChange = () => {};
+  const refresh = () => { for (const r of redraws) { try { r(); } catch (e) { console.error(e); } } updateChip(); emitBus(); onRoomChange(); };
 
   // ---------- pomocnicze ----------
   async function myName() {
@@ -628,5 +630,207 @@ export default function activate(api) {
     @keyframes tg-up { 0% { transform: translateY(20px) scale(.6); opacity: 0; } 15% { transform: translateY(0) scale(1.1); opacity: 1; } 75% { opacity: 1; } 100% { transform: translateY(-220px) scale(1); opacity: 0; } }
   `);
 
-  api.onDispose(() => { leave(true); api.bus.emit('together', { active: false }); });
+  // ================= ZNAJOMI: co teraz słuchają =================
+  let myCode = api.storage.get('friendCode', null);
+  if (!myCode) { myCode = newCode(); api.storage.set('friendCode', myCode); }
+  const friends = () => api.storage.get('friends', []);
+  const setFriends = (list) => api.storage.set('friends', list);
+  const statuses = new Map(); // kod -> { st, seen }
+  let net = null;
+  let netOpening = null;
+  const friendRedraws = new Set();
+  const fRefresh = () => { for (const r of friendRedraws) { try { r(); } catch (e) { console.error(e); } } updateFriendsChip(); };
+
+  // łączymy się tylko, gdy to ma sens: masz znajomych albo komuś dałeś swój kod
+  const wantNet = () => friends().length > 0 || api.storage.get('codeShared', false);
+  async function ensureNet() {
+    if (net || netOpening || !wantNet()) return net;
+    netOpening = FriendsNet.open({
+      id: myId, code: myCode, brokers: brokers(),
+      onStatus: (code, st) => { statuses.set(code, { st, seen: Date.now() }); fRefresh(); },
+    }).then(async (n) => {
+      net = n;
+      for (const f of friends()) await n.follow(f.code);
+      publishMe(true);
+      return n;
+    }).catch((e) => { console.error('[friends]', e); return null; }).finally(() => { netOpening = null; });
+    return netOpening;
+  }
+
+  async function myStatus() {
+    const c = cfg();
+    if (!c.share) return { off: true, hidden: true };
+    const t = api.player.current;
+    const tr = t ? shareTrack(t) : null;
+    return {
+      name: await myName(),
+      playing: !!api.player.playing,
+      track: tr ? { ...tr, ...(tr.source === 'pending' || tr.source === 'none' ? { source: 'info' } : {}) } : null,
+      room: S?.role === 'host' && c.shareRoom ? S.code : null,
+      afk: isAfk(),
+    };
+  }
+  let pubTimer = null;
+  let lastPub = '';
+  function publishMe(now = false) {
+    clearTimeout(pubTimer);
+    pubTimer = setTimeout(async () => {
+      if (!net) return;
+      const st = await myStatus();
+      const key = JSON.stringify(st);
+      // co 2 min odświeżamy, żeby znajomi wiedzieli, że wciąż jesteś
+      if (key === lastPub && !now) return;
+      lastPub = key;
+      net.publish(st);
+    }, now ? 0 : 1500);
+  }
+  const heartbeat = setInterval(() => { if (net) publishMe(true); }, 120000);
+  onRoomChange = () => publishMe();
+  api.player.on('track', () => publishMe());
+  api.player.on('state', () => publishMe());
+
+  async function addFriend(input, name = '') {
+    const code = normCode(input);
+    if (!code) { api.ui.toast('Kod znajomego ma 8 znaków, np. ABCD-EFGH', { error: true }); return false; }
+    if (code === myCode) { api.ui.toast('To Twój własny kod 🙂'); return false; }
+    if (friends().some((f) => f.code === code)) { api.ui.toast('Ten znajomy już jest na liście'); return false; }
+    setFriends([...friends(), { code, name: name.trim().slice(0, 32), added: Date.now() }]);
+    await ensureNet();
+    await net?.follow(code);
+    api.ui.toast('Dodano znajomego – za chwilę zobaczysz, czego słucha');
+    fRefresh();
+    return true;
+  }
+  async function removeFriend(code) {
+    setFriends(friends().filter((f) => f.code !== code));
+    statuses.delete(code);
+    await net?.unfollow(code);
+    fRefresh();
+  }
+  function copyMyCode() {
+    api.storage.set('codeShared', true);
+    ensureNet();
+    const text = `Dodaj mnie w JustMusic (CanWeListenTogether → Znajomi): ${myCode}`;
+    navigator.clipboard.writeText(text).then(() => api.ui.toast('Skopiowano Twój kod znajomego')).catch(() => api.ui.toast('Twój kod: ' + myCode));
+  }
+
+  const ONLINE_MS = 5 * 60e3;
+  function friendState(code) {
+    const s = statuses.get(code)?.st;
+    if (!s || s.off || Date.now() - (s.at || 0) > ONLINE_MS) return { online: false, s };
+    return { online: true, s };
+  }
+  function listenToo(s) {
+    const tr = s?.track;
+    if (!tr || tr.source === 'info' || !tr.source) { if (tr) api.ui.navigate('search', { q: `${tr.artist} ${tr.title}`.trim() }); return; }
+    const { source, ...rest } = tr;
+    api.player.play([{ ...rest, source }]);
+    api.ui.toast(`Słuchasz tego samego co ${s.name || 'znajomy'} 🎧`);
+  }
+
+  const fchip = api.ui.addTitlebarItem({ id: 'friends', icon: 'user', text: '', title: 'Znajomi – kto teraz słucha', onClick: () => api.ui.openView('friends') });
+  function updateFriendsChip() {
+    const n = friends().filter((f) => { const x = friendState(f.code); return x.online && x.s?.playing; }).length;
+    fchip.set({ text: n ? `${n} ${n === 1 ? 'znajomy słucha' : 'znajomych słucha'}` : '' });
+    fchip.show(n > 0);
+  }
+  updateFriendsChip();
+
+  function friendsView() {
+    const list = friends();
+    const c = cfg();
+    const add = h('input.input.tg-code-in', { placeholder: 'Kod znajomego, np. ABCD-EFGH', maxlength: 64, spellcheck: false, autocomplete: 'off' });
+    const nm = h('input.input', { placeholder: 'Nazwa (opcjonalnie)', maxlength: 32 });
+    const doAdd = async () => { if (await addFriend(add.value, nm.value)) { add.value = ''; nm.value = ''; } };
+    add.addEventListener('keydown', (e) => { if (e.key === 'Enter') doAdd(); });
+    const rows = list.map((f) => {
+      const { online, s } = friendState(f.code);
+      const name = f.name || s?.name || 'Znajomy';
+      const tr = online ? s?.track : null;
+      const status = !s ? 'czekam na połączenie…' : s.hidden ? 'ukrywa, czego słucha' : !online ? 'offline' : s.afk ? '💤 AFK' : tr ? (s.playing ? 'słucha teraz' : 'pauza') : 'nic nie gra';
+      return h('div.fr-row' + (online && s?.playing ? '.live' : ''), null,
+        avatar(name, f.code),
+        h('div.fr-main', null,
+          h('b', { text: name }),
+          h('small', { text: status }),
+          tr ? h('div.fr-track', null,
+            tr.thumb ? h('span.fr-art', { style: { backgroundImage: `url("${String(tr.thumb).replace(/"/g, '%22')}")` } }) : null,
+            h('span', { text: `${tr.title}${tr.artist ? ' – ' + tr.artist : ''}` })) : null),
+        h('div.fr-actions', null,
+          tr ? api.ui.button('Posłuchaj też', { cls: 'sm', icon: 'play', onClick: () => listenToo(s) }) : null,
+          online && s?.room && !S ? api.ui.button('Dołącz', { cls: 'sm', primary: true, icon: 'user', onClick: () => join(s.room) }) : null,
+          api.ui.iconButton('edit', 'Zmień nazwę', async () => {
+            const v = await api.ui.prompt({ title: 'Nazwa znajomego', value: f.name || s?.name || '', ok: 'Zapisz' });
+            if (v === null || v === undefined) return;
+            setFriends(friends().map((x) => (x.code === f.code ? { ...x, name: String(v).trim().slice(0, 32) } : x)));
+            fRefresh();
+          }, 'sm'),
+          api.ui.iconButton('x', 'Usuń znajomego', async () => {
+            if (await api.ui.confirm({ title: `Usunąć ${name}?`, ok: 'Usuń', danger: true })) removeFriend(f.code);
+          }, 'sm')));
+    });
+    return [
+      h('p.page-sub', { text: 'Zobacz, czego słuchają znajomi, włącz to samo albo dołącz do ich pokoju.' }),
+      h('div.tg-head', null,
+        h('div.tg-head-l', null,
+          h('span.tg-eyebrow', { text: 'Twój kod znajomego' }),
+          h('div.tg-code', null, h('span', { text: myCode }), api.ui.iconButton('copy', 'Kopiuj', copyMyCode, 'sm')),
+          h('span.tg-conn' + (net?.links ? '.on' : ''), { text: net?.links ? 'połączono' : wantNet() ? 'łączenie…' : 'wyślij komuś kod albo dodaj znajomego' })),
+        h('div.tg-head-r', null, api.ui.button('Wyślij kod znajomym', { icon: 'link', primary: true, onClick: copyMyCode }))),
+      h('div.tg-join.fr-add', null, add, nm, api.ui.button('Dodaj', { primary: true, icon: 'plus', onClick: doAdd })),
+      list.length ? h('div.fr-list', null, ...rows) : h('div.tg-empty', { text: 'Nie masz jeszcze znajomych. Poproś kogoś o jego kod znajomego albo wyślij mu swój.' }),
+      h('div.tg-section', null,
+        api.ui.settingRow('Pokazuj znajomym, czego słucham', 'Wyłączone = znajomi widzą tylko „ukrywa, czego słucha”.', api.ui.switch(c.share, (v) => { save({ share: v }); publishMe(true); })),
+        api.ui.settingRow('Pozwól dołączać do mojego pokoju', 'Gdy tworzysz pokój, znajomi zobaczą przycisk „Dołącz”.', api.ui.switch(c.shareRoom, (v) => { save({ shareRoom: v }); publishMe(true); }))),
+      h('p.tg-hint', { text: 'Twój kod działa jak hasło: kto go zna, widzi, czego słuchasz. Status jest szyfrowany tym kodem i przechodzi przez publiczne serwery tak jak pokoje.' }),
+    ];
+  }
+
+  api.ui.addView({
+    id: 'friends',
+    title: 'Znajomi',
+    icon: 'user',
+    render(el) {
+      const root = h('div.view-pad.tg');
+      el.append(root);
+      const draw = () => {
+        const focused = document.activeElement && root.contains(document.activeElement) && document.activeElement.tagName === 'INPUT';
+        if (focused) return; // nie przerywaj wpisywania
+        root.replaceChildren(h('h1.page-title', { text: 'Znajomi' }), ...friendsView());
+      };
+      friendRedraws.add(draw);
+      draw();
+      ensureNet().then(draw);
+      const tick = setInterval(draw, 15000);
+      return () => { friendRedraws.delete(draw); clearInterval(tick); };
+    },
+  });
+  api.commands.register({ id: 'friends', label: 'Znajomi – kto teraz słucha', run: () => api.ui.openView('friends') });
+  api.ui.addStyle(`
+    .fr-add { margin: 0 0 14px; max-width: 640px; }
+    .fr-add .input:nth-child(2) { flex: 0 1 180px; font-family: inherit; letter-spacing: normal; text-transform: none; font-size: 14px; }
+    .fr-list { display: grid; gap: 8px; }
+    .fr-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: var(--radius); background: var(--surface-2); border: 1px solid var(--border); }
+    .fr-row.live { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
+    .fr-row .tg-av { width: 40px; height: 40px; font-size: 16px; }
+    .fr-row.live .tg-av { box-shadow: 0 0 0 3px var(--surface-2), 0 0 0 5px var(--accent); }
+    .fr-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+    .fr-main b { font-size: 15px; }
+    .fr-main small { color: var(--text-dim); font-size: 12px; }
+    .fr-row.live .fr-main small { color: var(--accent); font-weight: 700; }
+    .fr-track { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: 13px; margin-top: 2px; }
+    .fr-track span:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .fr-art { width: 28px; height: 28px; border-radius: 6px; background: var(--elevated) center/cover; flex: none; }
+    .fr-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+  `);
+  ensureNet();
+
+  api.onDispose(() => {
+    clearInterval(heartbeat);
+    clearTimeout(pubTimer);
+    // pożegnanie – znajomi od razu zobaczą „offline”
+    if (net) { net.publish({ off: true }).finally(() => net?.close()); setTimeout(() => net?.close(), 1500); }
+    leave(true);
+    api.bus.emit('together', { active: false });
+  });
 }

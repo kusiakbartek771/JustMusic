@@ -112,6 +112,7 @@ contextBridge.exposeInMainWorld('jm', {
     onEvent: listen('voicemon:event'),
   },
   feedback: { save: (text) => call('feedback:save', text), send: (msg) => call('feedback:send', msg) },
+  backup: { export: (json, name) => call('backup:export', json, name), import: () => call('backup:import') },
   update: {
     state: () => call('update:state'),
     check: () => call('update:check'),
@@ -126,6 +127,12 @@ contextBridge.exposeInMainWorld('jm', {
     external: (url) => call('shell:external', url),
   },
   win: { overlay: (c) => call('win:overlay', c) },
+  overlay: {
+    start: (pluginId, port) => call('overlay:start', pluginId, port),
+    push: (pluginId, data) => call('overlay:push', pluginId, data),
+    stop: (pluginId) => call('overlay:stop', pluginId),
+    writeText: (pluginId, name, text) => call('overlay:writeText', pluginId, name, text),
+  },
   widgets: {
     caps: () => call('widgets:caps'),
     open: (pluginId, wid, opts) => call('widgets:open', pluginId, wid, opts),

@@ -4,6 +4,7 @@ import { S } from './state.js';
 import { h, esc, btn, modal, toast } from './ui.js';
 import { icon } from './icons.js';
 import { P } from './player.js';
+import { errorLog, errorLogText } from './crash.js';
 
 const TYPES = [
   ['bug', 'bug', 'Błąd', 'Coś nie działa tak, jak powinno'],
@@ -13,7 +14,7 @@ const TYPES = [
 ];
 const MOODS = ['😞', '😕', '😐', '🙂', '🤩'];
 
-export function openFeedback(preset = 'bug') {
+export function openFeedback(preset = 'bug', pre = {}) {
   let type = preset;
   let mood = -1;
   const typeRow = h('div.fb-types');
@@ -27,8 +28,9 @@ export function openFeedback(preset = 'bug') {
   const moodRow = h('div.fb-moods');
   const drawMoods = () => moodRow.replaceChildren(h('span.muted', { text: 'Jak oceniasz JustMusic?' }), ...MOODS.map((m, i) => h('button.fb-mood' + (i === mood ? '.on' : ''), { text: m, title: `${i + 1}/5`, on: { click: () => { mood = i; drawMoods(); } } })));
   drawMoods();
-  const title = h('input.input', { placeholder: 'Krótki tytuł', maxlength: 120 });
+  const title = h('input.input', { placeholder: 'Krótki tytuł', maxlength: 120, value: pre.title || '' });
   const msg = h('textarea.input', { rows: 6, style: { fontFamily: 'inherit', fontSize: '14px' } });
+  if (pre.msg) msg.value = pre.msg;
   const updatePlaceholder = () => {
     msg.placeholder = type === 'bug'
       ? 'Co się stało? Co robiłeś/aś wcześniej? Czego się spodziewałeś/aś?\n\n1. …\n2. …'
@@ -37,6 +39,8 @@ export function openFeedback(preset = 'bug') {
   updatePlaceholder();
   const contact = h('input.input', { placeholder: 'Kontakt (opcjonalnie) – jeśli chcesz odpowiedzi' });
   const sysBox = h('input', { type: 'checkbox', checked: true });
+  const hasLog = errorLog.length > 0;
+  const logBox = h('input', { type: 'checkbox', checked: !!pre.attachLog || (hasLog && preset === 'bug') });
   const sysInfo = () => [
     `JustMusic ${S.version} (${S.packaged ? 'instalacja' : 'dev'})`,
     `System: ${S.sys.os || S.platform}${S.sys.desktop ? ` · ${S.sys.desktop}` : ''}${S.sys.session ? ` (${S.sys.session})` : ''}`,
@@ -57,6 +61,7 @@ export function openFeedback(preset = 'bug') {
       mood >= 0 ? `Ocena: ${MOODS[mood]} (${mood + 1}/5)` : null,
       contact.value.trim() ? `Kontakt: ${contact.value.trim()}` : null,
       sysBox.checked ? `\n--- Informacje o systemie ---\n${sysInfo()}` : null,
+      hasLog && logBox.checked ? `\n--- Ostatnie błędy ---\n${errorLogText()}` : null,
     ].filter((x) => x !== null).join('\n');
   };
   const valid = () => {
@@ -81,6 +86,7 @@ export function openFeedback(preset = 'bug') {
             mood >= 0 ? { name: 'Ocena', value: `${MOODS[mood]} ${mood + 1}/5`, inline: true } : null,
             contact.value.trim() ? { name: 'Kontakt', value: contact.value.trim(), inline: true } : null,
             sysBox.checked ? { name: 'System', value: sysInfo() } : null,
+            hasLog && logBox.checked ? { name: 'Ostatnie błędy', value: errorLogText(6).slice(-1000) } : null,
           ].filter(Boolean),
         });
         toast('Dziękujemy! Opinia wysłana 💜');
@@ -127,7 +133,10 @@ export function openFeedback(preset = 'bug') {
     typeRow,
     h('div.fb-form', null, title, msg, contact,
       h('label.fb-check', null, sysBox, h('span', { text: 'Dołącz informacje o systemie i wersji (bez danych osobowych)' })),
-      preview, moodRow),
+      preview,
+      hasLog ? h('label.fb-check', null, logBox, h('span', { text: `Dołącz dziennik ostatnich błędów (${errorLog.length})` })) : null,
+      hasLog ? h('details.fb-sys', null, h('summary', { text: 'Pokaż dziennik błędów' }), h('pre.code', { text: errorLogText(), style: { maxHeight: '160px', overflow: 'auto' } })) : null,
+      moodRow),
     cfg.feedbackDirect ? h('p.muted', { style: { fontSize: '12px', margin: '10px 0 0' }, text: 'Opinia trafi prosto do autora – nie potrzebujesz żadnego konta.' }) : null,
     !cfg.feedbackUrl && !cfg.feedbackEmail && !cfg.feedbackDirect ? h('p.muted', { style: { fontSize: '12px', margin: '10px 0 0' }, text: 'Skopiuj zgłoszenie lub zapisz je do pliku i wyślij autorowi aplikacji.' }) : null,
     actions,

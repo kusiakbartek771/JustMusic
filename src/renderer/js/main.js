@@ -16,12 +16,14 @@ import { setupMiniPlayer } from './miniplayer.js';
 import { setupI18n, pickLang } from './i18n.js';
 import { setupUpdates } from './updates.js';
 import { setupSurvey } from './survey.js';
+import { setupCrashReports } from './crash.js';
 import { shouldOnboard, openOnboarding } from './onboarding.js';
 import './views.js';
 import './settings.js';
 
 async function boot() {
   await initState();
+  setupCrashReports();
   // język: przy pierwszym uruchomieniu z systemu, potem zapisany wybór
   if (!S.settings.lang) { S.settings.lang = pickLang(null, S.settings.onboarded); saveSettings(); }
   await setupI18n(S.settings.lang);

@@ -201,9 +201,10 @@ async function measureSource(track) {
   return { ytId: await ytIdFor(track) };
 }
 
-function measure(track, urgent = false) {
-  if (!normOn() || lufsUnavailable || !track || !window.jm.yt.loudness) return;
-  if (track.id in (S.data.lufs || {}) || measuring.has(track.id)) return;
+export function measure(track, urgent = false) {
+  if (!(normOn() || trimOn()) || lufsUnavailable || !track || !window.jm.yt.loudness) return;
+  const done = track.id in (S.data.lufs || {}) && (!trimOn() || track.id in (S.data.trim || {}));
+  if (done || measuring.has(track.id)) return;
   const i = measureQueue.findIndex((t) => t.id === track.id);
   if (i >= 0) measureQueue.splice(i, 1);
   if (urgent) measureQueue.unshift(track); else measureQueue.push(track);
@@ -219,10 +220,13 @@ async function pumpMeasure() {
   measureBusy = true;
   measuring.add(track.id);
   try {
-    const v = await window.jm.yt.loudness(await measureSource(track));
+    const r = await window.jm.yt.loudness(await measureSource(track));
+    const v = typeof r === 'number' ? r : r?.lufs;
     S.data.lufs ||= {};
     S.data.lufs[track.id] = typeof v === 'number' ? Math.round(v * 10) / 10 : false;
+    if (r && typeof r === 'object') { S.data.trim ||= {}; S.data.trim[track.id] = trimFrom(r, track); }
     saveData();
+    if (P.current?.id === track.id) applyLeadTrim();
     emit('loudness', track.id);
     for (const el of els) if (elTrack.get(el)?.id === track.id) syncBoost(el);
     if (P.current?.id === track.id) {
@@ -240,6 +244,52 @@ async function pumpMeasure() {
   }
 }
 export const loudnessAvailable = () => !lufsUnavailable;
+
+// ---------------- pomijanie ciszy na początku i końcu ----------------
+// Z pomiaru ffmpeg (silencedetect) zapamiętujemy: a – gdzie kończy się cisza na początku,
+// b – gdzie zaczyna się cisza trwająca do końca utworu. Cisza w środku (np. ukryty utwór) zostaje.
+const trimOn = () => S.settings.playback.trimSilence !== false;
+function trimFrom({ silences = [], dur = 0 }, track) {
+  const total = dur || track.duration || 0;
+  const out = {};
+  const first = silences[0];
+  if (first && first.s <= 0.05 && first.e && first.e >= 0.5 && first.e < 30) out.a = Math.round((first.e - 0.15) * 100) / 100;
+  const last = silences[silences.length - 1];
+  if (last && last.s > (out.a || 0) + 10) {
+    const toEnd = last.e === null || (total && last.e >= total - 0.25);
+    const len = (last.e ?? total) - last.s;
+    if (toEnd && (!total || len >= 1)) out.b = Math.round((last.s + 0.3) * 100) / 100;
+  }
+  return out;
+}
+function trimOf(track) {
+  if (!trimOn() || !track) return {};
+  return S.data.trim?.[track.id] || {};
+}
+/** pomiar przyszedł, gdy utwór już gra – przeskocz ciszę, jeśli wciąż w niej jesteśmy */
+function applyLeadTrim() {
+  const a = trimOf(P.current).a;
+  if (a && audio.currentTime < a - 0.2 && audio.currentTime < 3) audio.currentTime = a;
+}
+
+// Bez pomiaru (np. brak ffmpeg): cisza na końcu wykrywana na żywo z analizatora
+let rtSilent = 0, rtLast = 0, rtBuf = null;
+function liveSilenceAtEnd(left, full) {
+  if (!trimOn() || full < 30 || left > 25 || trimOf(P.current).b) { rtSilent = 0; return false; }
+  const vol = audio.volume;
+  if (S.settings.playback.muted || vol < 0.05) { rtSilent = 0; return false; }
+  const an = getAnalyser();
+  if (!an) return false;
+  if (!rtBuf || rtBuf.length !== an.fftSize) rtBuf = new Float32Array(an.fftSize);
+  an.getFloatTimeDomainData(rtBuf);
+  let peak = 0;
+  for (let i = 0; i < rtBuf.length; i++) peak = Math.max(peak, Math.abs(rtBuf[i]));
+  const now = performance.now();
+  if (peak < 0.002 * vol) rtSilent += rtLast ? Math.min(500, now - rtLast) : 0;
+  else rtSilent = 0;
+  rtLast = now;
+  return rtSilent >= 2500;
+}
 
 // ---------------- źródła ----------------
 const mediaUrl = (p) => `jm://app/media?p=${encodeURIComponent(p)}`;
@@ -316,9 +366,10 @@ async function load(track, { autoplay = true, startAt = 0 } = {}) {
   rampId++;
   audio.volume = volumeValue();
   audio.src = src.url;
-  if (startAt > 0) {
+  const lead = startAt > 0 ? startAt : trimOf(track).a || 0;
+  if (lead > 0) {
     const a = audio;
-    a.addEventListener('loadedmetadata', () => { a.currentTime = startAt; }, { once: true });
+    a.addEventListener('loadedmetadata', () => { a.currentTime = lead; }, { once: true });
   }
   pushHistory(track.id);
   // błędy odtwarzania obsługuje zdarzenie 'error' (odświeżenie / buforowanie)
@@ -387,6 +438,8 @@ async function prepareSpare(track) {
   syncBoost(el);
   spare.kind = src.kind;
   el.volume = 0;
+  const lead = trimOf(track).a;
+  if (lead) el.addEventListener('loadedmetadata', () => { if (token === spare.token) el.currentTime = lead; }, { once: true });
   const ok = () => { if (token === spare.token) spare.ready = true; done(); };
   const bad = () => { if (token === spare.token) { spare.track = null; spare.ready = false; spare.failedId = track.id; elTrack.delete(el); } done(); };
   const done = () => { el.removeEventListener('canplaythrough', ok); el.removeEventListener('error', bad); };
@@ -449,17 +502,28 @@ function fadeOutEl(el, ms) {
 let watchTimer = null;
 function watchEnd() {
   clearTimeout(watchTimer);
-  if (audio.paused || !smoothOn()) return;
-  const dur = audio.duration;
-  if (Number.isFinite(dur) && dur > 0 && P.current) {
+  if (audio.paused || !(smoothOn() || trimOn())) return;
+  const full = audio.duration;
+  if (Number.isFinite(full) && full > 0 && P.current) {
+    // koniec utworu = początek ciszy do końca (jeśli ją pomijamy)
+    const b = trimOf(P.current).b;
+    const dur = b && b < full - 0.5 ? b : full;
     const left = dur - audio.currentTime;
+    if ((dur < full && left <= 0.05) || liveSilenceAtEnd(left, full)) {
+      rtSilent = 0;
+      if (!transition) { finishTrack(); return; }
+    }
+    if (!smoothOn()) {
+      watchTimer = setTimeout(watchEnd, left < 26 ? 200 : 1000);
+      return;
+    }
     const x = crossfadeSec();
     const n = S.settings.playback.repeat === 'one' ? null : peekNext();
     if (n && left < x + 20 && spare.track?.id !== n.id && spare.failedId !== n.id) prepareSpare(n);
     if (n && x > 0 && left <= x && spare.ready && spare.track?.id === n.id && dur > x * 3 && !transition) {
       startSpare(Math.max(0.5, left - 0.05));
     }
-    watchTimer = setTimeout(watchEnd, left < x + 2 ? 50 : 500);
+    watchTimer = setTimeout(watchEnd, left < x + 2 ? 50 : left < 26 && trimOn() ? 200 : 500);
     return;
   }
   watchTimer = setTimeout(watchEnd, 500);
@@ -508,9 +572,9 @@ onActive('canplay', () => { P.loading = false; emit('loading', false); });
 onActive('pause', () => emit('state'));
 onActive('play', () => emit('state'));
 onActive('durationchange', () => emit('time'));
-onActive('ended', () => {
+function finishTrack() {
   if (S.settings.playback.repeat === 'one') {
-    audio.currentTime = 0;
+    audio.currentTime = trimOf(P.current).a || 0;
     playSafe();
     return;
   }
@@ -518,7 +582,8 @@ onActive('ended', () => {
   const n = peekNext();
   if (n && spare.ready && spare.track?.id === n.id && smoothOn()) startSpare(0);
   else next(true);
-});
+}
+onActive('ended', finishTrack);
 
 // Odzyskiwanie po błędzie odtwarzania – wykonywane sekwencyjnie, tylko raz na utwór.
 onActive('error', async () => {

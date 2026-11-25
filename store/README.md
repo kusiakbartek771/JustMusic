@@ -122,6 +122,18 @@ Treść to strona HTML z folderu pluginu; rozmawia z pluginem przez `window.jmw`
   `{ post(msg), update(opts), on(fn), close() }`; zdarzenia: `{ type: 'message', msg }`, `{ type: 'moved', x, y }`, `{ type: 'closed' }`
 - `anchor`: `top-left`, `top-center`, `top-right`, `center-left`, `center`, `center-right`, `bottom-left`, `bottom-center`, `bottom-right` albo `free` (wtedy `x`, `y`)
 - przeciąganie: CSS `-webkit-app-region: drag` (przyciski: `no-drag`)
+  (JustMusic 1.7.2+: na Windowsie/macOS `window.jmw.manualDrag` = true – wtedy przesuwaj okno przez `jmw.dragStart()` / `jmw.dragEnd()`)
+
+### `api.overlay` (JustMusic 1.8.0+)
+Lokalny serwer nakładek, np. do streamowania: pliki z folderu pluginu są dostępne pod
+`http://127.0.0.1:<port>/<id pluginu>/…` (tylko lokalnie) – w OBS / TikTok LIVE Studio dodaje się je jako źródło „Przeglądarka” / „Link”.
+- `start(port = 4848)` → `{ port, url }` – jeden serwer dla wszystkich pluginów
+- `push(data)` – dane na żywo dla strony: `new EventSource('events')` (ostatnia wartość też pod `state.json`)
+- `writeText(name.txt, text)` → pełna ścieżka pliku (np. dla źródła „Tekst z pliku”)
+- `stop()`
+
+### Nawigacja
+- `api.ui.navigate(view, param)` – np. `navigate('artist', { name })` (JustMusic 1.8.0+, `api.version >= 3`), `navigate('search', { q })`
 
 ### `api.storage`
 - `get(key, default)`, `set(key, value)` – trwałe dane pluginu (zapisywane w ustawieniach)

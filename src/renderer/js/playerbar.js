@@ -39,7 +39,7 @@ export function renderPlayer() {
       else if (!S.settings.layout.queue) toggleQueue();
     });
     const artist = h('div.a', { text: t.artist || '', title: t.artist });
-    artist.addEventListener('click', () => t.artist && navigate('search', { q: t.artist.split(',')[0].trim() }));
+    artist.addEventListener('click', () => t.artist && navigate('artist', { name: t.artist.split(',')[0].trim() }));
     txt.append(title, artist);
     np.append(c, txt, likeBtn);
     drawLike();

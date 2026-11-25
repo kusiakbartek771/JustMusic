@@ -12,16 +12,18 @@ i pełna customizacja wyglądu. Działa na **Windows, Linux i macOS**. Wszystkie
 | 🟢 **Spotify** | import playlist, albumów, utworów i wykonawców – utwory są automatycznie dopasowywane do nagrań z YouTube (bez Premium) |
 | ⬇️ **Pobieranie** | M4A / MP3 / OPUS, kolejka z postępem, równoległe pobieranie, czyste tagi i okładki, odtwarzanie offline |
 | 📁 **Pliki lokalne** | foldery z muzyką (MP3, FLAC, M4A, OGG, OPUS, WAV…), przeciąganie plików do okna, albumy i wykonawcy, import/eksport M3U |
-| 📝 **Playlisty** | tworzenie jednym kliknięciem, przeciąganie utworów na playlistę w menu, zmiana kolejności drag & drop, zaznaczanie wielu (Ctrl/Shift), szybkie dodawanie z wyszukiwarki w playliście, „zapisz wyniki / kolejkę jako playlistę” |
+| 🎤 **Wykonawcy** | strona wykonawcy: popularne utwory, to, co masz w bibliotece, albumy, Twoje statystyki i podobni wykonawcy |
+| 📝 **Playlisty** | tworzenie jednym kliknięciem, przeciąganie utworów na playlistę w menu, zmiana kolejności drag & drop, zaznaczanie wielu (Ctrl/Shift), szybkie dodawanie z wyszukiwarki w playliście, „zapisz wyniki / kolejkę jako playlistę”, wykrywanie duplikatów (także różnych wersji tego samego nagrania) |
 | 🔖 **Zakładki** | momenty w utworach (Ctrl+B, z notatką), utwory, playlisty, wyszukiwania i linki; znaczniki momentów na pasku postępu |
 | 🎨 **Customizacja** | 11 motywów, własne kolory, kolor akcentu, dynamiczny akcent z okładki, tło ambient, efekt szkła, zaokrąglenia, czcionki, gęstość, kształt okładek, własny CSS, udostępnianie motywów |
 | 🧩 **Układ paneli** | menu po lewej/prawej, odtwarzacz na górze/dole, panel kolejki, kompaktowe menu, zmiana szerokości paneli myszą, wybór sekcji |
-| 🔌 **Pluginy** | sklep z pluginami (aplikacja startuje bez nich): Discord, OhManyKeybinds, EvenMoreColors, GoToSleep, Bouncy, PlsSomeText, CanWeListenTogether, Wyłącznik czasowy, Wizualizer + API dla własnych |
+| 🔌 **Pluginy** | sklep z pluginami (aplikacja startuje bez nich): Discord, OhManyKeybinds, EvenMoreColors, GoToSleep, Bouncy, PlsSomeText, CanWeListenTogether (ze znajomymi: kto teraz czego słucha), OnAir (nakładka „teraz gra” dla OBS / TikTok LIVE Studio / YouTube i prośby o piosenki z czatu Twitcha), WhatIsThatSong?, Wyłącznik czasowy, Wizualizer + API dla własnych |
 | 🖥️ **System** | ikona w zasobniku, zamykanie do zasobnika, postęp i przyciski na pasku zadań (pauza, ±10 s, polub), skrót w menu (do przypięcia), autostart, przyciski okna w stylu aplikacji |
 | 🔄 **Aktualizacje** | automatyczne sprawdzanie i instalacja nowych wersji z GitHuba |
-| 💬 **Feedback** | opinie i krótka ankieta wysyłane prosto do autora – bez zakładania konta |
+| 💬 **Feedback** | opinie i krótka ankieta wysyłane prosto do autora – bez zakładania konta; raport po awarii z dziennikiem błędów jednym kliknięciem |
+| 💾 **Kopia ustawień** | eksport i import ustawień oraz biblioteki do pliku – np. przeniesienie na nowy komputer (łączenie albo zastępowanie) |
 | 👋 **Ekran powitalny** | wygląd, układ, silnik (yt-dlp + ffmpeg jednym kliknięciem), foldery, pluginy i system przy pierwszym uruchomieniu |
-| 🎚️ **Dźwięk** | 10-pasmowy korektor z presetami, wyrównywanie głośności utworów (pomiar LUFS przez ffmpeg), płynne przejścia (crossfade) i odtwarzanie bez przerw (gapless), płynne wyciszanie, wznawianie sesji |
+| 🎚️ **Dźwięk** | 10-pasmowy korektor z presetami, wyrównywanie głośności utworów (pomiar LUFS przez ffmpeg), płynne przejścia (crossfade) i odtwarzanie bez przerw (gapless), pomijanie ciszy na początku i końcu utworów, płynne wyciszanie, wznawianie sesji |
 | 🌍 **Języki** | polski 🥟, angielski 🫖, ukraiński 🌻 i niemiecki 🥨 – tłumaczona cała aplikacja razem z pluginami |
 | 🪟 **Mini odtwarzacz** | małe okno z okładką i sterowaniem, zawsze na wierzchu (także KDE Wayland), pasek lub duża okładka, głośność kółkiem myszy |
 | ⚡ **Wydajność** | czysty JS bez frameworka, wirtualizowane listy (tysiące utworów bez spadków), leniwe ładowanie okładek, przyrostowe skanowanie biblioteki |

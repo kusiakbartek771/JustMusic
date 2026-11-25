@@ -293,6 +293,7 @@ registerView('library', (root) => {
       status,
       btn('Dodaj pliki', { icon: 'file', cls: 'sm', onClick: addFilesDialog }),
       btn('Dodaj folder', { icon: 'folderPlus', cls: 'sm', onClick: addFolder }),
+      btn('Duplikaty', { icon: 'copy', cls: 'sm ghost', title: 'Znajdź powtórzone utwory w playlistach i polubionych', onClick: () => import('./dupes.js').then((m) => m.scanAllDupes()) }),
       iconBtn('refresh', 'Skanuj ponownie', () => rescan(true), 'sm')),
   );
   if (S.settings.library.folders.length) {
@@ -359,7 +360,7 @@ registerView('library', (root) => {
     status.textContent = `${arr.length} ${kind === 'albums' ? 'albumów' : 'wykonawców'}`;
     const grid = h('div.grid');
     for (const g of arr) {
-      const card = h('div.card', { on: { click: () => navigate('collection', { type: kind === 'albums' ? 'album' : 'artist', key: g.key }) } });
+      const card = h('div.card', { on: { click: () => (kind === 'albums' ? navigate('collection', { type: 'album', key: g.key }) : navigate('artist', { name: g.key })) } });
       card.append(kind === 'albums' ? cover(g.tracks[0].thumb, '', 'disc') : mosaic(g.tracks.map((t) => t.thumb)),
         h('div.title', { text: g.key }), h('div.sub', { text: kind === 'albums' ? `${g.artist || ''} · ${g.tracks.length}` : songs(g.tracks.length) }),
         fab((e) => { e.stopPropagation(); playAll(sortTracks(g.tracks, 'album'), null); }));
@@ -389,10 +390,147 @@ registerView('collection', (root, param) => {
   root.append(h('div.actions', null, fab(() => playAll(tracks, null)),
     btn('Losowo', { icon: 'shuffle', onClick: () => playAll(tracks, null, true) }),
     btn('Zapisz jako playlistę', { icon: 'listPlus', onClick: () => createPlaylist({ name: param.key, tracks, open: true }) }),
+    param.type === 'album' ? null : btn('Strona wykonawcy', { icon: 'user', cls: 'ghost', onClick: () => navigate('artist', { name: param.key }) }),
     btn(`Szukaj „${param.key}” na YouTube`, { icon: 'search', cls: 'ghost', onClick: () => navigate('search', { q: param.key }) })));
   const tl = TrackList({ tracks, showAlbum: param.type !== 'album' });
   root.append(tl.el);
   return () => tl.destroy();
+});
+
+// ======================= WYKONAWCA =======================
+// Strona wykonawcy: popularne utwory (YouTube), to, co masz w bibliotece, Twoje statystyki
+// i podobni wykonawcy (słuchani razem z nim w Twoich playlistach i historii).
+const splitArtists = (a) => String(a || '').split(/\s*(?:,|&|\bfeat\.?|\bft\.?|\bx\b|\/)\s*/i).map((x) => x.trim()).filter(Boolean);
+const normName = (s) => String(s || '').toLowerCase().replace(/\s*-\s*topic$/, '').replace(/\s+/g, ' ').trim();
+export function byArtist(t, name) {
+  const n = normName(name);
+  return splitArtists(t.artist).some((a) => normName(a) === n);
+}
+export function mainArtist(t) { return splitArtists(t?.artist)[0] || ''; }
+
+function similarArtists(name, limit = 12) {
+  const n = normName(name);
+  const score = new Map();
+  const add = (a, w) => {
+    const k = normName(a);
+    if (!k || k === n) return;
+    const cur = score.get(k) || { name: a, s: 0 };
+    cur.s += w;
+    score.set(k, cur);
+  };
+  // te same playlisty
+  for (const p of S.data.playlists) {
+    const ts = tracksOf(p.trackIds);
+    if (!ts.some((t) => byArtist(t, name))) continue;
+    const seen = new Set();
+    for (const t of ts) for (const a of splitArtists(t.artist)) if (!seen.has(normName(a))) { seen.add(normName(a)); add(a, 2); }
+  }
+  // słuchane tuż przed / po nim
+  const hist = S.data.history.slice(0, 600).map((x) => getTrack(x.id)).filter(Boolean);
+  hist.forEach((t, i) => {
+    if (!byArtist(t, name)) return;
+    for (const j of [i - 2, i - 1, i + 1, i + 2]) if (hist[j]) for (const a of splitArtists(hist[j].artist)) add(a, j === i - 1 || j === i + 1 ? 1 : 0.5);
+  });
+  // współpraca (feat.)
+  for (const t of [...S.local, ...Object.values(S.data.tracks)]) if (byArtist(t, name)) for (const a of splitArtists(t.artist)) add(a, 3);
+  return [...score.values()].sort((a, b) => b.s - a.s).slice(0, limit).map((x) => x.name);
+}
+
+registerView('artist', (root, param) => {
+  const name = String(param?.name || param || '').trim();
+  if (!name) { navigate('home', null, { replace: true }); return; }
+  let alive = true;
+  const cleanups = [];
+  const known = [...S.local, ...Object.values(S.data.tracks)];
+  const mine = known.filter((t) => byArtist(t, name));
+  // statystyki z historii
+  const plays = new Map();
+  for (const x of S.data.history) {
+    const t = getTrack(x.id);
+    if (t && byArtist(t, name)) plays.set(t.id, (plays.get(t.id) || 0) + 1);
+  }
+  const totalPlays = [...plays.values()].reduce((a, b) => a + b, 0);
+  const liked = mine.filter((t) => S.data.liked.includes(t.id));
+  mine.sort((a, b) => (plays.get(b.id) || 0) - (plays.get(a.id) || 0) || (S.data.liked.includes(b.id) - S.data.liked.includes(a.id)));
+
+  const photo = cover(mine.find((t) => t.thumb)?.thumb, 'artist-photo', 'user');
+  const meta = h('span');
+  const setMeta = (extra = '') => {
+    meta.innerHTML = [
+      mine.length ? `${songs(mine.length)} w bibliotece` : null,
+      liked.length ? `${liked.length} polubionych` : null,
+      totalPlays ? `${totalPlays} odtworzeń` : null,
+      extra || null,
+    ].filter(Boolean).map(esc).join(' · ') || esc('Wykonawca');
+  };
+  setMeta();
+  const head = headBlock({ eyebrow: 'Wykonawca', title: name, meta: '', coverEl: photo });
+  head.querySelector('.meta').append(meta);
+  head.classList.add('artist-head');
+  root.append(head);
+
+  let popular = [];
+  const bm = findBookmark('search', name);
+  const bmBtn = iconBtn(bm ? 'bookmarkFill' : 'bookmark', 'Zapisz w zakładkach', () => {
+    const on_ = toggleBookmark('search', name);
+    bmBtn.innerHTML = icon(on_ ? 'bookmarkFill' : 'bookmark');
+  });
+  const all = () => [...popular, ...mine.filter((t) => !popular.some((p) => p.id === t.id))];
+  root.append(h('div.actions', null,
+    fab(() => playAll(all(), { type: 'search', q: name }), 'Odtwórz wykonawcę'),
+    btn('Losowo', { icon: 'shuffle', onClick: () => playAll(all(), { type: 'search', q: name }, true) }),
+    btn('Zapisz jako playlistę', { icon: 'listPlus', onClick: () => createPlaylist({ name, tracks: all(), open: true }) }),
+    btn('Szukaj na YouTube', { icon: 'search', cls: 'ghost', onClick: () => navigate('search', { q: name }) }),
+    bmBtn));
+
+  // popularne – YouTube
+  const popHead = h('div.view-pad', { style: { paddingTop: '8px', paddingBottom: '8px' } }, h('div.section-head', { html: '<h2>Popularne</h2>' }));
+  const popBox = h('div');
+  const sk = h('div');
+  for (let i = 0; i < 5; i++) sk.append(h('div.skeleton.sk-row'));
+  popBox.append(sk);
+  root.append(popHead, popBox);
+  window.jm.yt.search(name, 30).then((list) => {
+    if (!alive) return;
+    // najpierw utwory tego wykonawcy (kanał / „- Topic”), potem reszta
+    const own = list.filter((t) => byArtist(t, name));
+    popular = (own.length >= 5 ? own : [...own, ...list.filter((t) => !own.includes(t))]).slice(0, 20);
+    if (!photo.querySelector('img') && popular[0]?.thumb) photo.replaceWith(Object.assign(cover(popular[0].thumb, 'artist-photo big-cover', 'user')));
+    popBox.replaceChildren();
+    if (!popular.length) { popBox.append(h('div.view-pad.muted', { text: 'Brak wyników na YouTube.' })); return; }
+    let shown = 10;
+    const draw = () => {
+      const tl = TrackList({ tracks: popular.slice(0, shown), showAlbum: false, context: { type: 'search', q: name } });
+      cleanups.push(() => tl.destroy());
+      popBox.replaceChildren(tl.el);
+      if (popular.length > shown) popBox.append(h('div.view-pad', { style: { paddingTop: '4px' } }, h('button.link', { text: 'Pokaż więcej', on: { click: () => { shown = 20; draw(); } } })));
+    };
+    draw();
+  }).catch((e) => { if (alive) popBox.replaceChildren(errorBox(e)); });
+
+  // w bibliotece
+  if (mine.length) {
+    root.append(h('div.view-pad', { style: { paddingTop: '16px', paddingBottom: '8px' } }, h('div.section-head', { html: `<h2>W Twojej bibliotece</h2><span class="muted">${mine.length}</span>` })));
+    const tl = TrackList({ tracks: mine.slice(0, 50), showAlbum: true });
+    root.append(tl.el);
+    cleanups.push(() => tl.destroy());
+    const albums = [...new Set(mine.map((t) => t.album).filter(Boolean))];
+    if (albums.length) {
+      const grid = h('div.chips');
+      for (const a of albums.slice(0, 20)) grid.append(h('button.chip', { html: `${icon('disc')}${esc(a)}`, on: { click: () => navigate('collection', { type: 'album', key: a }) } }));
+      root.append(h('div.view-pad', { style: { paddingTop: '16px', paddingBottom: '0' } }, h('div.section-head', { html: '<h2>Albumy</h2>' }), grid));
+    }
+  }
+
+  // podobni wykonawcy
+  const sim = similarArtists(name);
+  if (sim.length) {
+    const chips = h('div.chips');
+    for (const a of sim) chips.append(h('button.chip', { html: `${icon('user')}${esc(a)}`, on: { click: () => navigate('artist', { name: a }) } }));
+    root.append(h('div.view-pad', { style: { paddingTop: '16px' } }, h('div.section-head', { html: '<h2>Podobni wykonawcy</h2><span class="muted">z Twoich playlist i historii</span>' }), chips));
+  }
+
+  return () => { alive = false; cleanups.forEach((f) => f()); };
 });
 
 // ======================= POLUBIONE =======================
@@ -408,7 +546,8 @@ registerView('liked', (root) => {
   root.append(h('div.actions', null, fab(() => playAll(tracks(), { type: 'liked' })),
     btn('Losowo', { icon: 'shuffle', onClick: () => playAll(tracks(), { type: 'liked' }, true) }),
     btn('Pobierz wszystko', { icon: 'download', onClick: () => downloadTracks(tracks()) }),
-    btn('Zapisz jako playlistę', { icon: 'listPlus', cls: 'ghost', onClick: () => createPlaylist({ name: 'Polubione', tracks: tracks(), open: true }) })));
+    btn('Zapisz jako playlistę', { icon: 'listPlus', cls: 'ghost', onClick: () => createPlaylist({ name: 'Polubione', tracks: tracks(), open: true }) }),
+    btn('Duplikaty', { icon: 'copy', cls: 'ghost', onClick: () => import('./dupes.js').then((m) => m.likedDupes(refresh)) })));
   const tl = TrackList({ tracks: list, context: { type: 'liked' }, empty: 'Kliknij ♡ przy utworze, aby go tu dodać.' });
   root.append(tl.el);
   const off = on('liked', () => { const l = tracks(); setMeta(l); tl.update(l); });
@@ -446,7 +585,7 @@ registerView('playlist', (root, id) => {
     { label: 'Duplikuj', icon: 'copy', onClick: () => duplicatePlaylist(pl.id) },
     { label: 'Dodaj wszystko do innej playlisty', icon: 'listPlus', submenu: playlistSubmenu(tracks()) },
     { label: 'Eksportuj (M3U)', icon: 'upload', onClick: () => exportPlaylist(pl.name, tracks()) },
-    { label: 'Usuń duplikaty', icon: 'check', onClick: () => { const n = pl.trackIds.length; pl.trackIds = [...new Set(pl.trackIds)]; saveData(); toast(`Usunięto ${n - pl.trackIds.length} duplikatów`); refresh(); } },
+    { label: 'Znajdź duplikaty', icon: 'copy', onClick: () => import('./dupes.js').then((m) => m.playlistDupes(pl, refresh)) },
     { sep: true },
     { label: 'Usuń playlistę', icon: 'trash', danger: true, onClick: () => deletePlaylist(pl.id) },
   ]));

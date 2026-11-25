@@ -891,3 +891,28 @@ kbd.k { font-family: inherit; font-size: 12px; background: var(--surface-2); bor
 @media (prefers-reduced-motion: reduce) {
   :root:not([data-animations="force"]) *, :root:not([data-animations="force"]) *::before, :root:not([data-animations="force"]) *::after { animation: none !important; transition: none !important; }
 }
+
+/* eksport / import ustawień */
+.bk-parts { display: grid; gap: 8px; margin: 12px 0; }
+.bk-part { display: flex; gap: 12px; align-items: flex-start; padding: 10px 12px; border-radius: 10px; background: var(--elevated); cursor: pointer; }
+.bk-part input { margin-top: 3px; accent-color: var(--accent); }
+.bk-part div { display: grid; gap: 2px; }
+.bk-part small { font-size: 12px; }
+
+/* strona wykonawcy */
+.artist-head .big-cover { border-radius: 50%; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35); }
+.artist-head .big-cover img { border-radius: 50%; }
+
+/* duplikaty */
+.dupes { display: grid; gap: 10px; max-height: 55vh; overflow: auto; margin: 12px 0; padding-right: 4px; }
+.dupe-group { display: grid; gap: 2px; padding: 6px; border-radius: 12px; background: var(--elevated); }
+.dupe-row { display: flex; align-items: center; gap: 10px; padding: 6px; border-radius: 8px; cursor: pointer; }
+.dupe-row:hover { background: color-mix(in srgb, var(--text) 6%, transparent); }
+.dupe-row input { accent-color: var(--accent); }
+.dupe-cover { width: 36px; height: 36px; border-radius: 6px; flex-shrink: 0; }
+.dupe-txt { display: grid; min-width: 0; }
+.dupe-txt b, .dupe-txt span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 13px; }
+.dupe-txt span { font-size: 12px; }
+.dupe-row:has(input:not(:checked)) .dupe-txt { opacity: 0.45; text-decoration: line-through; }
+.dupe-pl { display: flex; justify-content: space-between; gap: 12px; padding: 12px 14px; border: 0; border-radius: 10px; background: var(--elevated); color: var(--text); font: inherit; cursor: pointer; text-align: left; }
+.dupe-pl:hover { background: color-mix(in srgb, var(--accent) 14%, var(--elevated)); }

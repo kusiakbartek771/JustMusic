@@ -57,7 +57,7 @@ function makeApi(p, disposers) {
 
   const api = {
     id: p.id,
-    version: 2,
+    version: 3, // 3: widok „artist” (navigate("artist", { name })), api.overlay
     manifest: p,
     h, icon, esc, fmtTime,
     player: {
@@ -223,6 +223,18 @@ function makeApi(p, disposers) {
         };
       },
       closeAll: () => window.jm.widgets.closeAll(p.id),
+    },
+    /** Lokalny serwer nakładek (http://127.0.0.1:port/<plugin>/…) – np. źródło przeglądarki w OBS */
+    overlay: {
+      async start(port) {
+        const r = await window.jm.overlay.start(p.id, port);
+        track(() => window.jm.overlay.stop(p.id).catch(() => {}));
+        return r;
+      },
+      push: (data) => window.jm.overlay.push(p.id, data),
+      stop: () => window.jm.overlay.stop(p.id),
+      /** plik tekstowy (np. „teraz gra”) dla źródła „Tekst z pliku” – zwraca pełną ścieżkę */
+      writeText: (name, text) => window.jm.overlay.writeText(p.id, name, text),
     },
     http: {
       text: (url) => window.jm.http.get(url, 'text'),

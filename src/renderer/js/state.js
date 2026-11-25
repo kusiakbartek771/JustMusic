@@ -16,7 +16,7 @@ export const DEFAULT_SETTINGS = {
     volume: 0.8, muted: false, shuffle: false, repeat: 'off', resume: true, prefetch: true,
     eq: { enabled: false, preset: 'flat', gains: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], preamp: 0 },
     seekStep: 10, fadeMs: 250, bass: 0,
-    normalize: true, normTarget: -14, crossfade: 0, gapless: true,
+    normalize: true, normTarget: -14, crossfade: 0, gapless: true, trimSilence: true,
   },
   downloads: { dir: '', format: 'm4a', tag: true, concurrent: 2 },
   youtube: { searchMode: 'youtube', results: 25, cookiesBrowser: '', extraArgs: '', ytdlpPath: '', ffmpegPath: '', jsRuntime: true },
@@ -39,6 +39,7 @@ export const DEFAULT_DATA = {
   downloads: {},     // trackId -> ścieżka pliku
   spMap: {},         // spotifyId -> ytId
   lufs: {},          // trackId -> zmierzona głośność (LUFS) albo false
+  trim: {},          // trackId -> { a: koniec ciszy na początku, b: początek ciszy do końca } (s)
   session: null,     // { queue, index, time }
 };
 
@@ -72,6 +73,7 @@ export async function initState() {
   S.config = r.config || {};
   S.sys = r.sys || {};
   S.packaged = !!r.packaged;
+  S.lastCrash = r.lastCrash || null;
   if (!S.settings.downloads.dir) S.settings.downloads.dir = r.paths.music;
   // migracja: dawna opcja „natywna ramka”
   if (S.settings.layout.nativeFrame) { S.settings.layout.windowButtons = 'system'; delete S.settings.layout.nativeFrame; }

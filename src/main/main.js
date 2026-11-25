@@ -15,6 +15,7 @@ const discord = require('./discord');
 const updater = require('./updater');
 const voicemon = require('./voicemonitor');
 const widgets = require('./widgets');
+const overlay = require('./overlay');
 const mini = require('./mini');
 const ffmpegInst = require('./ffmpeg');
 const PKG = require('../../package.json');
@@ -164,6 +165,28 @@ function windowButtons(settings) {
   return wb;
 }
 
+// ---------------- raporty o awariach ----------------
+const crashFile = () => path.join(app.getPath('userData'), 'crash.json');
+function noteCrash(info) {
+  try {
+    fs.writeFileSync(crashFile(), JSON.stringify({ ...info, at: new Date().toISOString(), version: app.getVersion() }));
+  } catch {}
+}
+function takeCrash() {
+  try {
+    const c = JSON.parse(fs.readFileSync(crashFile(), 'utf8'));
+    fs.unlinkSync(crashFile());
+    return c;
+  } catch { return null; }
+}
+process.on('uncaughtException', (e) => {
+  console.error('[uncaught]', e);
+  noteCrash({ kind: 'proces główny', reason: 'exception', message: String(e?.message || e).slice(0, 500), stack: String(e?.stack || '').slice(0, 3000) });
+});
+app.on('child-process-gone', (_e, d) => {
+  if (d.type === 'GPU' && ['crashed', 'oom', 'launch-failed'].includes(d.reason)) noteCrash({ kind: 'GPU', reason: d.reason, exitCode: d.exitCode });
+});
+
 function createWindow() {
   const settings = appSettings;
   const bounds = store.load('window', {}) || {};
@@ -253,6 +276,12 @@ function createWindow() {
   win.on('hide', saveBounds);
   win.on('closed', () => { win = null; widgets.closeAll(); mini.close(); });
   // przeładowanie interfejsu = pluginy startują od nowa, stare widżety byłyby osierocone
+  // awaria interfejsu: zapamiętaj (po ponownym wczytaniu aplikacja zaproponuje raport) i wczytaj go od nowa
+  win.webContents.on('render-process-gone', (_e, d) => {
+    if (d.reason === 'clean-exit') return;
+    noteCrash({ kind: 'interfejs', reason: d.reason, exitCode: d.exitCode });
+    setTimeout(() => { if (win && !win.isDestroyed()) win.reload(); }, 500);
+  });
   win.webContents.on('did-start-navigation', (d) => { if (d.isMainFrame && !d.isSameDocument) widgets.closeAll(); });
 }
 
@@ -278,6 +307,7 @@ function setupIpc() {
     return {
       settings,
       data,
+      lastCrash: takeCrash(),
       paths: {
         music: path.join(app.getPath('music'), 'JustMusic'),
         userData: app.getPath('userData'),
@@ -344,6 +374,21 @@ function setupIpc() {
       filters: [{ name: 'Audio', extensions: [...library.EXT].map((e) => e.slice(1)) }],
     });
     return r.canceled ? [] : r.filePaths;
+  });
+
+  // ---- eksport / import ustawień i biblioteki ----
+  handle('backup:export', async (json, name) => {
+    const r = await dialog.showSaveDialog(win, { title: 'Eksportuj ustawienia JustMusic', defaultPath: path.join(app.getPath('documents'), name || 'JustMusic.jmbackup.json'), filters: [{ name: 'Kopia JustMusic', extensions: ['json'] }] });
+    if (r.canceled || !r.filePath) return null;
+    await fs.promises.writeFile(r.filePath, String(json), 'utf8');
+    return r.filePath;
+  });
+  handle('backup:import', async () => {
+    const r = await dialog.showOpenDialog(win, { title: 'Importuj ustawienia JustMusic', properties: ['openFile'], filters: [{ name: 'Kopia JustMusic', extensions: ['json'] }] });
+    if (r.canceled || !r.filePaths[0]) return null;
+    const st = await fs.promises.stat(r.filePaths[0]);
+    if (st.size > 64 * 1024 * 1024) throw new Error('Plik jest za duży');
+    return fs.promises.readFile(r.filePaths[0], 'utf8');
   });
 
   handle('m3u:export', async (name, tracks) => {
@@ -481,6 +526,10 @@ function setupIpc() {
   handle('win:overlay', () => {});
 
   // widżety na pulpicie (pluginy)
+  handle('overlay:start', (pluginId, port) => overlay.start(pluginId, plugins.dirOf(pluginId), port));
+  handle('overlay:push', (pluginId, data) => overlay.push(pluginId, data));
+  handle('overlay:stop', (pluginId) => overlay.stop(pluginId));
+  handle('overlay:writeText', (pluginId, name, text) => overlay.writeText(pluginId, name, text));
   handle('widgets:caps', () => widgets.caps());
   handle('widgets:open', (pluginId, wid, opts) => widgets.open(pluginId, wid, opts));
   handle('widgets:update', (key, opts) => widgets.update(key, opts));

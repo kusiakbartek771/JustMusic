@@ -1,0 +1,16 @@
+{
+  "id": "onair",
+  "name": "OnAir",
+  "version": "1.0.0",
+  "author": "JustMusic",
+  "icon": "video",
+  "tags": [
+    "stream",
+    "twitch",
+    "nakładka"
+  ],
+  "short": "Muzyka z JustMusic na streamie: nakładka „teraz gra” dla OBS, TikTok LIVE Studio i YouTube oraz prośby o piosenki z czatu Twitcha.",
+  "description": "• nakładka „teraz gra” jako link – dodajesz ją w OBS, Streamlabs, Twitch Studio albo TikTok LIVE Studio jako źródło „Przeglądarka” / „Link”\n• 4 układy (karta, pasek, sam tekst, winyl), własne kolory, rozmiar i animacje przy zmianie utworu\n• okno z zielonym tłem do przechwycenia – dla programów bez źródła „Link”\n• plik tekstowy nowplaying.txt dla źródła „Tekst z pliku”\n• czat Twitcha: !song (co teraz gra), !sr (prośby o piosenki z limitami i cooldownem), !skip dla moderatorów\n• lista próśb widzów, a na nakładce „Prośba od: nick”\n• instrukcje krok po kroku dla OBS, TikToka, YouTube i Twitcha\nWymaga JustMusic 1.8.0 lub nowszego.",
+  "main": "index.js",
+  "minAppVersion": "1.8.0"
+}

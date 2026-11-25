@@ -118,6 +118,29 @@
       ]
     },
     {
+      "id": "onair",
+      "name": "OnAir",
+      "version": "1.0.0",
+      "author": "JustMusic",
+      "icon": "video",
+      "tags": [
+        "stream",
+        "twitch",
+        "nakładka"
+      ],
+      "short": "Muzyka z JustMusic na streamie: nakładka „teraz gra” dla OBS, TikTok LIVE Studio i YouTube oraz prośby o piosenki z czatu Twitcha.",
+      "description": "• nakładka „teraz gra” jako link – dodajesz ją w OBS, Streamlabs, Twitch Studio albo TikTok LIVE Studio jako źródło „Przeglądarka” / „Link”\n• 4 układy (karta, pasek, sam tekst, winyl), własne kolory, rozmiar i animacje przy zmianie utworu\n• okno z zielonym tłem do przechwycenia – dla programów bez źródła „Link”\n• plik tekstowy nowplaying.txt dla źródła „Tekst z pliku”\n• czat Twitcha: !song (co teraz gra), !sr (prośby o piosenki z limitami i cooldownem), !skip dla moderatorów\n• lista próśb widzów, a na nakładce „Prośba od: nick”\n• instrukcje krok po kroku dla OBS, TikToka, YouTube i Twitcha\nWymaga JustMusic 1.8.0 lub nowszego.",
+      "main": "index.js",
+      "minAppVersion": "1.8.0",
+      "files": [
+        "index.js",
+        "manifest.json",
+        "overlay.css",
+        "overlay.html",
+        "overlay.js"
+      ]
+    },
+    {
       "id": "sleeptimer",
       "name": "Wyłącznik czasowy",
       "version": "1.1.0",
@@ -138,7 +161,7 @@
     {
       "id": "together",
       "name": "CanWeListenTogether",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "author": "JustMusic",
       "icon": "user",
       "tags": [
@@ -146,10 +169,12 @@
         "znajomi",
         "synchronizacja"
       ],
-      "short": "Słuchaj muzyki ze znajomymi w tym samym momencie – jak wspólny głośnik przez internet. Wystarczy kod pokoju.",
-      "description": "• tworzysz pokój jednym kliknięciem i wysyłasz znajomym 8-znakowy kod\n• goście słyszą dokładnie to samo co Ty – utwór, pauza i przewijanie są synchronizowane co do ułamka sekundy\n• działa z YouTube, Spotify i plikami z dysku (goście dostają je automatycznie z YouTube)\n• lista słuchających, podgląd kolejki i latające reakcje 🔥❤️😂\n• goście mogą proponować utwory, a jeśli pozwolisz – także sterować\n• z pluginem Discord status pokazuje „Słuchamy razem”\n• bez kont i bez instalowania serwera – wiadomości są szyfrowane kodem pokoju",
+      "short": "Słuchaj muzyki ze znajomymi w tym samym momencie i zobacz, czego teraz słuchają. Wystarczy kod.",
+      "description": "• tworzysz pokój jednym kliknięciem i wysyłasz znajomym 8-znakowy kod\n• goście słyszą dokładnie to samo co Ty – utwór, pauza i przewijanie są synchronizowane co do ułamka sekundy\n• działa z YouTube, Spotify i plikami z dysku (goście dostają je automatycznie z YouTube)\n• lista słuchających, podgląd kolejki i latające reakcje 🔥❤️😂\n• goście mogą proponować utwory, a jeśli pozwolisz – także sterować\n• z pluginem Discord status pokazuje „Słuchamy razem”\n• Znajomi: dodajesz kogoś jego kodem i widzisz na żywo, czego słucha – jednym kliknięciem włączasz to samo albo dołączasz do jego pokoju\n• bez kont i bez instalowania serwera – wiadomości są szyfrowane kodem pokoju",
       "main": "index.js",
+      "minAppVersion": "1.4.0",
       "files": [
+        "friends.js",
         "index.js",
         "manifest.json",
         "mqtt.js",
@@ -177,7 +202,7 @@
     {
       "id": "whatisthatsong",
       "name": "WhatIsThatSong?",
-      "version": "1.2.1",
+      "version": "1.2.2",
       "short": "Widżety i popupy z tym, co teraz gra – sterujesz muzyką bez otwierania aplikacji.",
       "description": "Pokazuje aktualny utwór w małych widżetach na pulpicie, które są zawsze na ekranie (nad innymi oknami i na każdym pulpicie wirtualnym).\n• pełne sterowanie z widżetu: pauza, poprzedni/następny, przewijanie ±10 s i przeciąganiem paska, polubienie, przejście do profilu wykonawcy\n• 5 układów: karta, pionowa, pasek, sama okładka, sam tekst\n• wybierasz, co widać: okładka, tytuł, wykonawca, album, postęp, czas, przyciski, ±10 s, wykonawca, serduszko, następny utwór\n• gotowe style (szkło, neon, retro, terminal…) albo własne kolory, czcionka, rozmiar, zaokrąglenie, cień, tło z okładki\n• położenie: róg lub krawędź ekranu z odstępem albo przeciągnięcie myszką\n• przepuszczanie kliknięć, ukrywanie podczas pauzy, kilka widżetów naraz\n• popupy: przy nowym utworze, po skrócie klawiszowym (domyślnie Ctrl+Alt+W) oraz przy zmianie głośności, pauzie i przewijaniu – z animacją i własnym stylem\n• edytor z podglądem na żywo (menu „Widżety”)\nWymaga JustMusic 1.4.0 lub nowszego.",
       "author": "JustMusic",

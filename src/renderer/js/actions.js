@@ -248,7 +248,7 @@ export function trackMenu(tracks, { playlistId = null, onRemove = null } = {}) {
       ? { label: single ? 'Pobierz' : 'Pobierz zaznaczone', icon: 'download', onClick: () => downloadTracks(tracks) }
       : null,
     filePath ? { label: 'Pokaż w folderze', icon: 'folder', onClick: () => window.jm.shell.show(filePath) } : null,
-    single && t.artist ? { label: `Szukaj: ${t.artist.split(',')[0]}`, icon: 'user', onClick: () => navigate('search', { q: t.artist.split(',')[0].trim() }) } : null,
+    single && t.artist ? { label: `Wykonawca: ${t.artist.split(',')[0]}`, icon: 'user', onClick: () => navigate('artist', { name: t.artist.split(',')[0].trim() }) } : null,
     single && t.album && t.source === 'local' ? { label: 'Przejdź do albumu', icon: 'disc', onClick: () => navigate('collection', { type: 'album', key: t.album }) } : null,
     single && t.ytId ? { label: 'Otwórz w YouTube', icon: 'external', onClick: () => window.jm.shell.external(`https://www.youtube.com/watch?v=${t.ytId}`) } : null,
     single && (t.ytId || t.spotifyId) ? { label: 'Kopiuj link', icon: 'copy', onClick: () => { navigator.clipboard.writeText(t.ytId ? `https://youtu.be/${t.ytId}` : `https://open.spotify.com/track/${t.spotifyId}`); toast('Skopiowano link'); } } : null,
